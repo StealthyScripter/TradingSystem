@@ -1,2 +1,90 @@
-/env
-/local
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Virtual environments
+.env/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+**/env/
+**/.env
+
+# Local environment variables
+*.env
+**/.env
+
+# Local config and temp folders
+/local/
+**/local/
+
+# Logs
+*.log
+*.out
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints/
+
+# Test coverage
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+
+# Pytest
+.cache/
+
+# Mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Pyright type checker
+.pyright/
+
+# Pylint
+pylint-report.txt
+pylint-global.rc
+
+# VSCode
+.vscode/
+
+# JetBrains IDEs (PyCharm, IntelliJ)
+.idea/
+
+# macOS
+.DS_Store
+
+# Docker
+*.pid
+*.seed
+*.bak
+*.tar
+*.tar.gz
+*.img
+*.sqlite3
+**/*.sqlite3
+
+# Data artifacts
+flexpesa-ai/data/*
+!flexpesa-ai/data/.gitkeep
+
+# Frontend (placeholder for later)
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+
+# Misc
+*.swp
+*.swo
+*.tmp
+*.bak
