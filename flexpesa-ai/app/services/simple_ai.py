@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
-from typing import Dict, List
 import requests
+import logging  # ✅ ADDED: Missing import
+from typing import Dict, List
 from datetime import datetime, timedelta
 
 class SimpleAIService:

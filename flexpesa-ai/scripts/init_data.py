@@ -1,4 +1,7 @@
-"""
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from app.core.database import SessionLocal, engine, Base
 from app.models.portfolio import Account, Asset
 
@@ -6,6 +9,11 @@ from app.models.portfolio import Account, Asset
 Base.metadata.create_all(bind=engine)
 
 db = SessionLocal()
+
+# Clear existing data
+db.query(Asset).delete()
+db.query(Account).delete()
+db.commit()
 
 # Sample data matching your frontend
 accounts_data = [
@@ -26,6 +34,23 @@ accounts_data = [
             {"symbol": "VTI", "shares": 40, "avg_cost": 220.15},
             {"symbol": "NVDA", "shares": 5, "avg_cost": 520.80},
         ]
+    },
+    {
+        "name": "Cash App Investing",
+        "account_type": "trading",
+        "assets": [
+            {"symbol": "TSLA", "shares": 8, "avg_cost": 180.45},
+            {"symbol": "AMD", "shares": 25, "avg_cost": 85.60},
+            {"symbol": "GOOGL", "shares": 12, "avg_cost": 125.30},
+        ]
+    },
+    {
+        "name": "Robinhood",
+        "account_type": "crypto",
+        "assets": [
+            {"symbol": "BTC-USD", "shares": 0.5, "avg_cost": 35000},
+            {"symbol": "ETH-USD", "shares": 2.5, "avg_cost": 2200},
+        ]
     }
 ]
 
@@ -41,6 +66,11 @@ for account_data in accounts_data:
     
     db.commit()
 
-print("Sample data created!")
+print("✅ Sample data created successfully!")
+print(f"Created {len(accounts_data)} accounts with sample assets")
+print("Now you can test the API endpoints:")
+print("- http://localhost:8000/")
+print("- http://localhost:8000/api/v1/portfolio/summary")
+print("- http://localhost:8000/api/v1/accounts/")
+
 db.close()
-"""

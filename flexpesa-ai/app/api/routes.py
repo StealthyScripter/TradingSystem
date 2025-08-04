@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from typing import List
+
+# Fix imports - use correct filenames and separate model/schema imports
 from app.core.database import get_db
 from app.schemas.portfolio import Account, AccountCreate, Asset, AssetCreate, PortfolioAnalysis
+from app.models.portfolio import Account as AccountModel, Asset as AssetModel
 from app.services.portfolio_service import PortfolioService
-from typing import List
 
 router = APIRouter()
 
@@ -28,7 +31,8 @@ def create_account(account: AccountCreate, db: Session = Depends(get_db)):
 @router.get("/accounts/", response_model=List[Account])
 def get_accounts(db: Session = Depends(get_db)):
     """Get all accounts"""
-    return db.query(Account).all()
+    accounts = db.query(AccountModel).all()
+    return accounts
 
 @router.post("/assets/", response_model=Asset)
 def add_asset(asset: AssetCreate, db: Session = Depends(get_db)):
