@@ -1,10 +1,12 @@
 from sqlalchemy.orm import Session
-from app.models.portfolio import Account, Asset
-from app.schemas.portfolio import AccountCreate, AssetCreate
-from .market_data import MarketDataService
-from .simple_ai import SimpleAIService
 from typing import List, Dict
 import logging
+
+# Fix imports
+from app.models.portfolio import Account, Asset
+from app.schemas.portfolio import AccountCreate, AssetCreate
+from app.services.market_data import MarketDataService
+from app.services.simple_ai import SimpleAIService
 
 class PortfolioService:
     """Core portfolio management service"""
