@@ -1,0 +1,59 @@
+{
+  "name": "investment-portfolio-mvp",
+  "version": "1.0.0",
+  "description": "Full-stack investment portfolio management with FastAPI backend and Next.js frontend",
+  "scripts": {
+    "start": "npm run start:concurrent",
+    "dev": "npm run start:concurrent",
+    "start:concurrent": "concurrently \"npm run start:backend\" \"npm run start:frontend\" --names \"BACKEND,FRONTEND\" --prefix name --prefix-colors \"cyan,magenta\"",
+    "start:backend": "cd flexpesa-ai && python run.py",
+    "start:frontend": "cd flexpesa-client && npm run dev",
+    "setup": "npm run setup:backend && npm run setup:frontend",
+    "setup:backend": "cd flexpesa-ai && python -m venv venv && (venv/bin/activate || venv\\Scripts\\activate.bat) && pip install -r requirements.txt && python scripts/init_data.py",
+    "setup:frontend": "cd flexpesa-client && npm install",
+    "install:all": "npm run setup",
+    "clean": "npm run clean:backend && npm run clean:frontend",
+    "clean:backend": "cd flexpesa-ai && rm -rf venv/ __pycache__/ *.pyc data/*.db",
+    "clean:frontend": "cd flexpesa-client && rm -rf node_modules/ .next/ out/",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "cd flexpesa-ai && python -m pytest",
+    "test:frontend": "cd flexpesa-client && npm run test",
+    "build": "npm run build:frontend",
+    "build:frontend": "cd flexpesa-client && npm run build",
+    "lint": "npm run lint:frontend",
+    "lint:frontend": "cd flexpesa-client && npm run lint",
+    "docs": "echo 'API docs available at http://localhost:8000/docs when backend is running'",
+    "status": "echo 'Frontend: http://localhost:3000' && echo 'Backend API: http://localhost:8000' && echo 'API Docs: http://localhost:8000/docs'"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [
+    "investment",
+    "portfolio",
+    "fastapi",
+    "nextjs",
+    "typescript",
+    "python",
+    "react",
+    "finance",
+    "stocks",
+    "crypto",
+    "ai",
+    "real-time"
+  ],
+  "author": "Investment Portfolio Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "python": ">=3.8.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/investment-portfolio-mvp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/investment-portfolio-mvp/issues"
+  },
+  "homepage": "https://github.com/your-username/investment-portfolio-mvp#readme"
+}

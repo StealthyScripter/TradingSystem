@@ -88,3 +88,5 @@ frontend/build/
 *.swo
 *.tmp
 *.bak
+
+*.sh
