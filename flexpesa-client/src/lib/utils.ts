@@ -1,21 +1,47 @@
-import { clsx } from 'clsx';
+import { clsx, ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { Asset, Account } from '@/types';
 
-export function cn(...inputs) {
+interface RawAssetData {
+  id?: number;
+  account_id?: number;
+  symbol?: string;
+  shares?: number | string;
+  avg_cost?: number | string;
+  current_price?: number | string;
+  value?: number | string;
+  last_updated?: string;
+  pnl?: number | string;
+  pnl_percent?: number | string;
+  [key: string]: unknown; 
+}
+
+interface RawAccountData {
+  id?: number;
+  name?: string;
+  account_type?: string;
+  balance?: number | string;
+  assets?: RawAssetData[];
+  created_at?: string;
+  [key: string]: unknown; 
+}
+
+export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// Safely format currency with null/undefined protection
-export function formatCurrency(amount, decimals = 2) {
-  // Handle null, undefined, NaN, or invalid values
-  if (amount === null || amount === undefined || isNaN(amount) || amount === '') {
+
+export function formatCurrency(
+  amount: number | string | null | undefined, 
+  decimals: number = 2
+): string {
+  
+  if (amount === null || amount === undefined || amount === '' || isNaN(Number(amount))) {
     return '$0.00';
   }
   
-  // Convert string to number if needed
   const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
   
-  // Check again after conversion
   if (isNaN(numAmount)) {
     return '$0.00';
   }
@@ -33,9 +59,11 @@ export function formatCurrency(amount, decimals = 2) {
   }
 }
 
-// Safely format numbers with null/undefined protection
-export function formatNumber(num, decimals = 2) {
-  if (num === null || num === undefined || isNaN(num) || num === '') {
+export function formatNumber(
+  num: number | string | null | undefined, 
+  decimals: number = 2
+): string {
+  if (num === null || num === undefined || num === '' || isNaN(Number(num))) {
     return '0.00';
   }
   
@@ -56,9 +84,11 @@ export function formatNumber(num, decimals = 2) {
   }
 }
 
-// Safely format percentage with null/undefined protection
-export function formatPercent(num, decimals = 2) {
-  if (num === null || num === undefined || isNaN(num) || num === '') {
+export function formatPercent(
+  num: number | string | null | undefined, 
+  decimals: number = 2
+): string {
+  if (num === null || num === undefined || num === '' || isNaN(Number(num))) {
     return '+0.00%';
   }
   
@@ -77,8 +107,7 @@ export function formatPercent(num, decimals = 2) {
   }
 }
 
-// Safely format date with null/undefined protection
-export function formatDate(dateString) {
+export function formatDate(dateString: string | null | undefined): string {
   if (!dateString || dateString === 'Invalid Date') {
     return 'Just now';
   }
@@ -89,9 +118,8 @@ export function formatDate(dateString) {
       return 'Just now';
     }
     
-    // Return relative time if recent, otherwise formatted date
     const now = new Date();
-    const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
     
     if (diffInMinutes < 1) return 'Just now';
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
@@ -109,13 +137,12 @@ export function formatDate(dateString) {
   }
 }
 
-// Get account icon with fallback
-export function getAccountIcon(accountName) {
+export function getAccountIcon(accountName: string | null | undefined): string {
   if (!accountName || typeof accountName !== 'string') {
     return '💼';
   }
   
-  const iconMap = {
+  const iconMap: Record<string, string> = {
     'Wells Fargo Intuitive': '🏦',
     'Wells Fargo': '🏦',
     'Stack Well': '📈',
@@ -149,57 +176,98 @@ export function getAccountIcon(accountName) {
   return '💼';
 }
 
-// Validate and clean asset data
-export function validateAssetData(asset) {
-  if (!asset || typeof asset !== 'object') {
+function safeNumber(value: unknown): number {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+}
+
+function safeString(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (value === null || value === undefined) return '';
+  return String(value);
+}
+
+export function validateAssetData(asset: unknown): Asset | null {
+  if (!asset || typeof asset !== 'object' || asset === null) {
     return null;
   }
   
+  const rawAsset = asset as RawAssetData;
+  
   return {
-    id: asset.id || 0,
-    symbol: asset.symbol || 'UNKNOWN',
-    shares: formatNumber(asset.shares || 0),
-    avg_cost: asset.avg_cost || 0,
-    current_price: asset.current_price || 0,
-    value: asset.value || 0,
-    last_updated: asset.last_updated || new Date().toISOString(),
-    pnl: asset.pnl || 0,
-    pnl_percent: asset.pnl_percent || 0,
+    id: safeNumber(rawAsset.id),
+    account_id: safeNumber(rawAsset.account_id),
+    symbol: safeString(rawAsset.symbol) || 'UNKNOWN',
+    shares: safeNumber(rawAsset.shares),
+    avg_cost: safeNumber(rawAsset.avg_cost),
+    current_price: safeNumber(rawAsset.current_price),
+    value: safeNumber(rawAsset.value),
+    last_updated: safeString(rawAsset.last_updated) || new Date().toISOString(),
+    pnl: safeNumber(rawAsset.pnl),
+    pnl_percent: safeNumber(rawAsset.pnl_percent),
   };
 }
 
-// Validate and clean account data
-export function validateAccountData(account) {
-  if (!account || typeof account !== 'object') {
+export function validateAccountData(account: unknown): Account | null {
+  if (!account || typeof account !== 'object' || account === null) {
     return null;
   }
   
+  const rawAccount = account as RawAccountData;
+  
   return {
-    id: account.id || 0,
-    name: account.name || 'Unknown Account',
-    account_type: account.account_type || 'brokerage',
-    balance: account.balance || 0,
-    assets: Array.isArray(account.assets) 
-      ? account.assets.map(validateAssetData).filter(Boolean)
+    id: safeNumber(rawAccount.id),
+    name: safeString(rawAccount.name) || 'Unknown Account',
+    account_type: safeString(rawAccount.account_type) || 'brokerage',
+    balance: safeNumber(rawAccount.balance),
+    assets: Array.isArray(rawAccount.assets) 
+      ? rawAccount.assets.map(validateAssetData).filter((asset): asset is Asset => asset !== null)
       : [],
-    created_at: account.created_at || new Date().toISOString(),
+    created_at: safeString(rawAccount.created_at) || new Date().toISOString(),
   };
 }
 
-// Check if a value is considered "loading" or invalid
-export function isLoadingValue(value) {
+export function isLoadingValue(value: unknown): boolean {
   return value === null || 
          value === undefined || 
          value === '' || 
-         isNaN(value) || 
+         (typeof value === 'number' && isNaN(value)) ||
          value === 'N/A' ||
          value === 'Invalid Date';
 }
 
-// Get status color class based on P&L
-export function getPnLColorClass(pnl) {
+export function getPnLColorClass(pnl: number | null | undefined): string {
   if (isLoadingValue(pnl) || pnl === 0) {
     return 'text-gray-600';
   }
-  return pnl >= 0 ? 'text-green-600' : 'text-red-600';
+  return (pnl as number) >= 0 ? 'text-green-600' : 'text-red-600';
+}
+
+export function isValidAssetData(data: unknown): data is RawAssetData {
+  return typeof data === 'object' && data !== null;
+}
+
+export function isValidAccountData(data: unknown): data is RawAccountData {
+  return typeof data === 'object' && data !== null;
+}
+
+export type FormValue = string | number | null | undefined;
+
+export function parseFormNumber(value: FormValue): number {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+}
+
+export function parseFormString(value: FormValue): string {
+  if (typeof value === 'string') return value.trim();
+  if (value === null || value === undefined) return '';
+  return String(value);
 }

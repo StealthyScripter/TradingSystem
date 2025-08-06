@@ -1,7 +1,12 @@
 import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 
-const ErrorMessage = ({ message, onRetry }) => {
+interface ErrorMessageProps {
+  message: string;
+  onRetry?: () => void;
+}
+
+const ErrorMessage: React.FC<ErrorMessageProps> = ({ message, onRetry }) => {
   return (
     <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
       <div className="flex items-center gap-2 mb-2">

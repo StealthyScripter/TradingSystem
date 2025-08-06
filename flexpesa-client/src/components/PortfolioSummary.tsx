@@ -1,8 +1,21 @@
 import React from 'react';
 import { TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
+import { PortfolioData } from '@/types';
 import { formatCurrency, formatPercent } from '../lib/utils';
 
-const PortfolioSummary = ({ portfolioData, lastUpdated, onRefresh, isRefreshing }) => {
+interface PortfolioSummaryProps {
+  portfolioData: PortfolioData;
+  lastUpdated: string;
+  onRefresh: () => void;
+  isRefreshing: boolean;
+}
+
+const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ 
+  portfolioData, 
+  lastUpdated, 
+  onRefresh, 
+  isRefreshing 
+}) => {
   if (!portfolioData) return null;
 
   const { accounts, total_value, analysis } = portfolioData;

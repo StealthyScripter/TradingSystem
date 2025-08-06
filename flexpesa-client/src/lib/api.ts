@@ -1,5 +1,5 @@
-import axios from 'axios';
-import { PortfolioData, Account, Asset, APIResponse } from '../types';
+import axios, { AxiosError } from 'axios';
+import { PortfolioData, Account, Asset, APIResponse } from '@/types';
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? 'https://your-backend-domain.com/api/v1'
@@ -13,106 +13,110 @@ const api = axios.create({
   },
 });
 
-// API Functions
+// Helper function to handle API errors
+function handleApiError(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    return error.message || 'An API error occurred';
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return 'An unknown error occurred';
+}
+
 export const portfolioAPI = {
-  // Get complete portfolio summary - MAIN ENDPOINT
   async getPortfolioSummary(): Promise<APIResponse<PortfolioData>> {
     try {
-      const response = await api.get('/portfolio/summary');
+      const response = await api.get<PortfolioData>('/portfolio/summary');
       return {
         success: true,
         data: response.data
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error fetching portfolio summary:', error);
       return {
         success: false,
-        error: error.message
+        error: handleApiError(error)
       };
     }
   },
 
-  // Update prices for all assets
-  async updatePrices() {
+  async updatePrices(): Promise<APIResponse<{ updated_assets: number; total_assets: number }>> {
     try {
-      const response = await api.post('/portfolio/update-prices');
+      const response = await api.post<{ updated_assets: number; total_assets: number }>('/portfolio/update-prices');
       return {
         success: true,
         data: response.data
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error updating prices:', error);
       return {
         success: false,
-        error: error.message
+        error: handleApiError(error)
       };
     }
   },
 
-  // Get all accounts
-  async getAccounts() {
+  async getAccounts(): Promise<APIResponse<Account[]>> {
     try {
-      const response = await api.get('/accounts/');
+      const response = await api.get<Account[]>('/accounts/');
       return {
         success: true,
         data: response.data
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error fetching accounts:', error);
       return {
         success: false,
-        error: error.message
+        error: handleApiError(error)
       };
     }
   },
 
-  // Create new account
-  async createAccount(accountData) {
+  async createAccount(accountData: Partial<Account>): Promise<APIResponse<Account>> {
     try {
-      const response = await api.post('/accounts/', accountData);
+      const response = await api.post<Account>('/accounts/', accountData);
       return {
         success: true,
         data: response.data
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error creating account:', error);
       return {
         success: false,
-        error: error.message
+        error: handleApiError(error)
       };
     }
   },
 
-  // Add new asset
-  async addAsset(assetData) {
+  async addAsset(assetData: Partial<Asset>): Promise<APIResponse<Asset>> {
     try {
-      const response = await api.post('/assets/', assetData);
+      const response = await api.post<Asset>('/assets/', assetData);
       return {
         success: true,
         data: response.data
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error adding asset:', error);
       return {
         success: false,
-        error: error.message
+        error: handleApiError(error)
       };
     }
   },
 
-  // Quick AI analysis
-  async getQuickAnalysis(symbols) {
+  async getQuickAnalysis(symbols: string[]): Promise<APIResponse<{ analysis: Record<string, unknown> }>> {
     try {
-      const response = await api.post('/analysis/quick', symbols);
+      const response = await api.post<{ analysis: Record<string, unknown> }>('/analysis/quick', symbols);
       return {
         success: true,
         data: response.data
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error getting analysis:', error);
       return {
         success: false,
-        error: error.message
+        error: handleApiError(error)
       };
     }
   }

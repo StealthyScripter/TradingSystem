@@ -1,5 +1,6 @@
 export interface Asset {
   id: number;
+  account_id: number;
   symbol: string;
   shares: number;
   avg_cost: number;
@@ -41,4 +42,11 @@ export interface APIResponse<T> {
   success: boolean;
   data?: T;
   error?: string;
+}
+
+export interface AssetCreate {
+  account_id: number;
+  symbol: string;
+  shares: number;
+  avg_cost: number;
 }

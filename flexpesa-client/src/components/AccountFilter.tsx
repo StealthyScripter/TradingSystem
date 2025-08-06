@@ -25,9 +25,9 @@ const AccountFilter: React.FC<AccountFilterProps> = ({ accounts, selectedAccount
         {accounts.map((account) => (
           <button
             key={account.id}
-            onClick={() => onAccountSelect(account.id)}
+            onClick={() => onAccountSelect(account.id.toString())} 
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-              selectedAccount === account.id 
+              selectedAccount === account.id.toString() 
                 ? 'bg-blue-600 text-white' 
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}

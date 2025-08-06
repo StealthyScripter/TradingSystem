@@ -1,25 +1,50 @@
 import React, { useState } from 'react';
 import { Plus, DollarSign, Brain, TrendingUp } from 'lucide-react';
+import { Account, Asset } from '@/types';
 import LoadingSpinner from './LoadingSpinner';
 
-const QuickActions = ({ onAddAccount, onAddAsset, onRunAnalysis, accounts }) => {
-  const [showAddAccount, setShowAddAccount] = useState(false);
-  const [showAddAsset, setShowAddAsset] = useState(false);
-  const [loading, setLoading] = useState(false);
+interface QuickActionsProps {
+  accounts: Account[];
+  onAddAccount: (accountData: Partial<Account>) => Promise<void>;
+  onAddAsset: (assetData: Partial<Asset>) => Promise<void>;
+  onRunAnalysis: () => Promise<void>;
+}
+
+interface AccountFormData {
+  name: string;
+  account_type: string;
+}
+
+interface AssetFormData {
+  account_id: string;
+  symbol: string;
+  shares: string;
+  avg_cost: string;
+}
+
+const QuickActions: React.FC<QuickActionsProps> = ({ 
+  onAddAccount, 
+  onAddAsset, 
+  onRunAnalysis, 
+  accounts 
+}) => {
+  const [showAddAccount, setShowAddAccount] = useState<boolean>(false);
+  const [showAddAsset, setShowAddAsset] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
   
-  const [accountForm, setAccountForm] = useState({
+  const [accountForm, setAccountForm] = useState<AccountFormData>({
     name: '',
     account_type: 'brokerage'
   });
 
-  const [assetForm, setAssetForm] = useState({
+  const [assetForm, setAssetForm] = useState<AssetFormData>({
     account_id: '',
     symbol: '',
     shares: '',
     avg_cost: ''
   });
 
-  const handleAddAccount = async (e) => {
+  const handleAddAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     await onAddAccount(accountForm);
@@ -28,7 +53,7 @@ const QuickActions = ({ onAddAccount, onAddAsset, onRunAnalysis, accounts }) => 
     setLoading(false);
   };
 
-  const handleAddAsset = async (e) => {
+  const handleAddAsset = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     await onAddAsset({
@@ -117,7 +142,7 @@ const QuickActions = ({ onAddAccount, onAddAsset, onRunAnalysis, accounts }) => 
               <button
                 type="submit"
                 disabled={loading}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
               >
                 {loading ? <LoadingSpinner size="sm" /> : 'Add Account'}
               </button>
@@ -193,7 +218,7 @@ const QuickActions = ({ onAddAccount, onAddAsset, onRunAnalysis, accounts }) => 
               <button
                 type="submit"
                 disabled={loading}
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50"
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
               >
                 {loading ? <LoadingSpinner size="sm" /> : 'Add Asset'}
               </button>
@@ -213,4 +238,3 @@ const QuickActions = ({ onAddAccount, onAddAsset, onRunAnalysis, accounts }) => 
 };
 
 export default QuickActions;
-
