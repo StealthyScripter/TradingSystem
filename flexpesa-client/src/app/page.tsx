@@ -3,35 +3,17 @@
 import React, { useState, useEffect } from 'react';
 import { portfolioAPI } from '../lib/api';
 import PortfolioSummary from '../components/PortfolioSummary';
+import { Account, Asset, PortfolioData } from '@/types';
 import AccountFilter from '../components/AccountFilter';
 import AssetTable from '../components/AssetTable';
 import QuickActions from '../components/QuickActions';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 
-interface Asset {
-  symbol: string;
-  quantity?: number;
-  currentPrice?: number;
-  value?: number;
-}
-
-interface Account {
-  id: string;
-  name: string;
-  assets: Asset[];
-}
-
-interface PortfolioData {
-  accounts: Account[];
-  totalValue?: number;
-  totalGainLoss?: number;
-}
-
 export default function Dashboard() {
   const [portfolioData, setPortfolioData] = useState<PortfolioData | null>(null);
-  const [selectedAccount, setSelectedAccount] = useState('all');
-  const [loading, setLoading] = useState(true);
+  const [selectedAccount, setSelectedAccount] = useState<string>('all');
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);

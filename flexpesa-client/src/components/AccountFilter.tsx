@@ -1,7 +1,14 @@
 import React from 'react';
+import { Account } from '@/types';
 import { getAccountIcon } from '../lib/utils';
 
-const AccountFilter = ({ accounts, selectedAccount, onAccountSelect }) => {
+interface AccountFilterProps {
+  accounts: Account[];
+  selectedAccount: string;
+  onAccountSelect: (accountId: string) => void;
+}
+
+const AccountFilter: React.FC<AccountFilterProps> = ({ accounts, selectedAccount, onAccountSelect }) => {
   return (
     <div className="bg-white rounded-lg shadow-lg p-4 mb-6">
       <div className="flex flex-wrap gap-2">

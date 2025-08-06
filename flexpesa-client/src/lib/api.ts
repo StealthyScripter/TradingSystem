@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { PortfolioData, Account, Asset, APIResponse } from '../types';
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? 'https://your-backend-domain.com/api/v1'
@@ -15,7 +16,7 @@ const api = axios.create({
 // API Functions
 export const portfolioAPI = {
   // Get complete portfolio summary - MAIN ENDPOINT
-  async getPortfolioSummary() {
+  async getPortfolioSummary(): Promise<APIResponse<PortfolioData>> {
     try {
       const response = await api.get('/portfolio/summary');
       return {
