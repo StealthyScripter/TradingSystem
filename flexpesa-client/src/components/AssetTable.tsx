@@ -1,5 +1,6 @@
 import React from 'react';
 import { TrendingUp, TrendingDown, Brain, BarChart3, RefreshCw } from 'lucide-react';
+import { Account, Asset } from '@/types';
 import { 
   formatCurrency, 
   formatNumber, 
@@ -12,11 +13,27 @@ import {
   getPnLColorClass
 } from '../lib/utils';
 
-const AssetTable = ({ accounts, selectedAccount, onAnalyze }) => {
+interface AssetTableProps {
+  accounts: Account[];
+  selectedAccount: string;
+  onAnalyze: (symbol: string) => void;
+}
+
+interface AccountSectionProps {
+  account: Account;
+  onAnalyze: (symbol: string) => void;
+}
+
+interface AssetRowProps {
+  asset: Asset;
+  onAnalyze: (symbol: string) => void;
+}
+
+const AssetTable: React.FC<AssetTableProps> = ({ accounts, selectedAccount, onAnalyze }) => {
   // Validate and filter accounts
   const validAccounts = (accounts || [])
     .map(validateAccountData)
-    .filter(Boolean);
+    .filter(Boolean) as Account[];
 
   const filteredAccounts = selectedAccount === 'all' 
     ? validAccounts 
@@ -51,10 +68,10 @@ const AssetTable = ({ accounts, selectedAccount, onAnalyze }) => {
   );
 };
 
-const AccountSection = ({ account, onAnalyze }) => {
+const AccountSection: React.FC<AccountSectionProps> = ({ account, onAnalyze }) => {
   const validAssets = (account.assets || [])
     .map(validateAssetData)
-    .filter(Boolean);
+    .filter(Boolean) as Asset[];
 
   return (
     <div className="border rounded-lg p-4">
@@ -112,7 +129,7 @@ const AccountSection = ({ account, onAnalyze }) => {
   );
 };
 
-const AssetRow = ({ asset, onAnalyze }) => {
+const AssetRow: React.FC<AssetRowProps> = ({ asset, onAnalyze }) => {
   // Calculate values with safe fallbacks
   const shares = asset.shares || 0;
   const avgCost = asset.avg_cost || 0;
