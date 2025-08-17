@@ -23,6 +23,7 @@ venv.bak/
 # Local config and temp folders
 /local/
 **/local/
+**/node_modules
 
 # Logs
 *.log
