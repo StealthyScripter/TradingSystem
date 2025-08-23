@@ -13,7 +13,7 @@ interface RawAssetData {
   last_updated?: string;
   pnl?: number | string;
   pnl_percent?: number | string;
-  [key: string]: unknown; 
+  [key: string]: unknown;
 }
 
 interface RawAccountData {
@@ -23,7 +23,7 @@ interface RawAccountData {
   balance?: number | string;
   assets?: RawAssetData[];
   created_at?: string;
-  [key: string]: unknown; 
+  [key: string]: unknown;
 }
 
 export function cn(...inputs: ClassValue[]) {
@@ -32,20 +32,20 @@ export function cn(...inputs: ClassValue[]) {
 
 
 export function formatCurrency(
-  amount: number | string | null | undefined, 
+  amount: number | string | null | undefined,
   decimals: number = 2
 ): string {
-  
+
   if (amount === null || amount === undefined || amount === '' || isNaN(Number(amount))) {
     return '$0.00';
   }
-  
+
   const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-  
+
   if (isNaN(numAmount)) {
     return '$0.00';
   }
-  
+
   try {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -60,19 +60,19 @@ export function formatCurrency(
 }
 
 export function formatNumber(
-  num: number | string | null | undefined, 
+  num: number | string | null | undefined,
   decimals: number = 2
 ): string {
   if (num === null || num === undefined || num === '' || isNaN(Number(num))) {
     return '0.00';
   }
-  
+
   const numValue = typeof num === 'string' ? parseFloat(num) : num;
-  
+
   if (isNaN(numValue)) {
     return '0.00';
   }
-  
+
   try {
     return new Intl.NumberFormat('en-US', {
       minimumFractionDigits: decimals,
@@ -85,19 +85,19 @@ export function formatNumber(
 }
 
 export function formatPercent(
-  num: number | string | null | undefined, 
+  num: number | string | null | undefined,
   decimals: number = 2
 ): string {
   if (num === null || num === undefined || num === '' || isNaN(Number(num))) {
     return '+0.00%';
   }
-  
+
   const numValue = typeof num === 'string' ? parseFloat(num) : num;
-  
+
   if (isNaN(numValue)) {
     return '+0.00%';
   }
-  
+
   try {
     const sign = numValue >= 0 ? '+' : '';
     return `${sign}${numValue.toFixed(decimals)}%`;
@@ -111,20 +111,20 @@ export function formatDate(dateString: string | null | undefined): string {
   if (!dateString || dateString === 'Invalid Date') {
     return 'Just now';
   }
-  
+
   try {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) {
       return 'Just now';
     }
-    
+
     const now = new Date();
     const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-    
+
     if (diffInMinutes < 1) return 'Just now';
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
-    
+
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -141,7 +141,7 @@ export function getAccountIcon(accountName: string | null | undefined): string {
   if (!accountName || typeof accountName !== 'string') {
     return '💼';
   }
-  
+
   const iconMap: Record<string, string> = {
     'Wells Fargo Intuitive': '🏦',
     'Wells Fargo': '🏦',
@@ -158,12 +158,12 @@ export function getAccountIcon(accountName: string | null | undefined): string {
     'Kraken': '🐙',
     'Binance': '🟡',
   };
-  
+
   // Try exact match first
   if (iconMap[accountName]) {
     return iconMap[accountName];
   }
-  
+
   // Try partial match
   const lowerName = accountName.toLowerCase();
   for (const [key, icon] of Object.entries(iconMap)) {
@@ -171,7 +171,7 @@ export function getAccountIcon(accountName: string | null | undefined): string {
       return icon;
     }
   }
-  
+
   // Default fallback
   return '💼';
 }
@@ -180,8 +180,13 @@ function safeNumber(value: unknown): number {
   if (typeof value === 'number') return value;
   if (typeof value === 'string') {
     const parsed = parseFloat(value);
-    return isNaN(parsed) ? 0 : parsed;
+    if (isNaN(parsed)) {
+      console.warn('Invalid numeric value encountered:', value);
+      return 0;
+    }
+    return parsed;
   }
+  console.warn('Unexpected value type for number conversion:', typeof value, value);
   return 0;
 }
 
@@ -195,9 +200,9 @@ export function validateAssetData(asset: unknown): Asset | null {
   if (!asset || typeof asset !== 'object' || asset === null) {
     return null;
   }
-  
+
   const rawAsset = asset as RawAssetData;
-  
+
   return {
     id: safeNumber(rawAsset.id),
     account_id: safeNumber(rawAsset.account_id),
@@ -216,15 +221,15 @@ export function validateAccountData(account: unknown): Account | null {
   if (!account || typeof account !== 'object' || account === null) {
     return null;
   }
-  
+
   const rawAccount = account as RawAccountData;
-  
+
   return {
     id: safeNumber(rawAccount.id),
     name: safeString(rawAccount.name) || 'Unknown Account',
     account_type: safeString(rawAccount.account_type) || 'brokerage',
     balance: safeNumber(rawAccount.balance),
-    assets: Array.isArray(rawAccount.assets) 
+    assets: Array.isArray(rawAccount.assets)
       ? rawAccount.assets.map(validateAssetData).filter((asset): asset is Asset => asset !== null)
       : [],
     created_at: safeString(rawAccount.created_at) || new Date().toISOString(),
@@ -232,9 +237,9 @@ export function validateAccountData(account: unknown): Account | null {
 }
 
 export function isLoadingValue(value: unknown): boolean {
-  return value === null || 
-         value === undefined || 
-         value === '' || 
+  return value === null ||
+         value === undefined ||
+         value === '' ||
          (typeof value === 'number' && isNaN(value)) ||
          value === 'N/A' ||
          value === 'Invalid Date';

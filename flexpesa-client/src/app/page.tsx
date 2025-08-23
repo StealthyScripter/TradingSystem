@@ -23,7 +23,7 @@ export default function Dashboard() {
     try {
       setError(null);
       const result = await portfolioAPI.getPortfolioSummary();
-      
+
       if (result.success) {
         setPortfolioData(result.data);
         setLastUpdated(new Date().toLocaleTimeString());
@@ -39,6 +39,8 @@ export default function Dashboard() {
 
   // Refresh prices
   const handleRefreshPrices = async () => {
+    if (isRefreshing) return;
+    
     setIsRefreshing(true);
     try {
       const result = await portfolioAPI.updatePrices();
@@ -99,11 +101,11 @@ export default function Dashboard() {
   // Run general AI analysis
   const handleRunAnalysis = async () => {
     if (!portfolioData?.accounts) return;
-    
+
     const allSymbols = portfolioData.accounts
       .flatMap((account: Account) => account.assets.map((asset: Asset) => asset.symbol))
       .slice(0, 5);
-    
+
     if (allSymbols.length > 0) {
       await handleAnalyze(allSymbols[0]);
     }
@@ -141,8 +143,8 @@ export default function Dashboard() {
 
         {/* Error Message */}
         {error && (
-          <ErrorMessage 
-            message={error} 
+          <ErrorMessage
+            message={error}
             onRetry={() => {
               setError(null);
               fetchPortfolioData();
