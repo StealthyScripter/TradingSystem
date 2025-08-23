@@ -1,7 +1,6 @@
 from sqlalchemy.orm import Session
 from typing import List, Dict
 import logging
-import asyncio
 from datetime import datetime
 
 from app.models.portfolio import Account, Asset
@@ -57,7 +56,7 @@ class PortfolioService:
         print(f"📊 Updated {updated_count}/{len(assets)} assets")
         return {"updated_assets": updated_count, "total_assets": len(assets)}
 
-    def get_portfolio_summary(self) -> Dict:
+    async def get_portfolio_summary(self) -> Dict:
         """Get complete portfolio summary with enhanced AI analysis"""
         accounts = self.db.query(Account).all()
 
@@ -103,12 +102,7 @@ class PortfolioService:
         # Get lightweight AI analysis (async)
         try:
             # Run lightweight AI analysis
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            ai_analysis = loop.run_until_complete(
-                self.ai_service.analyze_portfolio_fast(portfolio_data)
-            )
-            loop.close()
+            ai_analysis = await self.ai_service.analyze_portfolio_fast(portfolio_data)
 
             print("🤖 Lightweight AI analysis completed successfully")
 

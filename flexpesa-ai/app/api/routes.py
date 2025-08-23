@@ -13,16 +13,16 @@ from app.services.portfolio_service import PortfolioService
 router = APIRouter()
 
 @router.get("/portfolio/summary")
-def get_portfolio_summary(db: Session = Depends(get_db)):
+async def get_portfolio_summary(db: Session = Depends(get_db)):
     """Get complete portfolio summary with enhanced AI analysis - MAIN ENDPOINT"""
     service = PortfolioService(db)
-    return service.get_portfolio_summary()
+    return await service.get_portfolio_summary()
 
 @router.post("/portfolio/update-prices")
-def update_prices(db: Session = Depends(get_db)):
+async def update_prices(db: Session = Depends(get_db)):
     """Update current prices for all assets"""
     service = PortfolioService(db)
-    return service.update_prices()
+    return await service.update_prices()
 
 @router.post("/accounts/", response_model=Account)
 def create_account(account: AccountCreate, db: Session = Depends(get_db)):
@@ -83,9 +83,14 @@ async def schedule_analysis_update(background_tasks: BackgroundTasks, db: Sessio
     """Schedule background update of all AI analysis data"""
     try:
         def run_background_analysis():
-            service = PortfolioService(db)
-            # Simple background task - could be expanded
-            print("🔄 Background analysis scheduled")
+            from app.core.database import SessionLocal
+            background_db = SessionLocal()
+            try:
+                service = PortfolioService(background_db)
+                # Simple background task - could be expanded
+                print("🔄 Background analysis scheduled")
+            finally:
+                background_db.close()
 
         background_tasks.add_task(run_background_analysis)
 
@@ -186,4 +191,3 @@ async def get_sentiment_analysis_batch(symbols: List[str], db: Session = Depends
     except Exception as e:
         logging.error(f"Batch sentiment analysis failed: {e}")
         raise HTTPException(status_code=500, detail=f"Sentiment analysis failed: {str(e)}")
-    

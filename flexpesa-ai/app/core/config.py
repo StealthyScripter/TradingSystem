@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings
 from pydantic import ConfigDict
 from typing import Optional
+from pathlib import Path
 
 class Settings(BaseSettings):
     # Basic API Configuration
@@ -14,8 +15,14 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "your-secret-key-change-in-production-abc123def456ghi789jkl"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080  # 1 week
 
-    # Database (SQLite for MVP)
     DATABASE_URL: str = "sqlite:///./data/portfolio.db"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Ensure data directory exists
+        if self.DATABASE_URL.startswith("sqlite:///"):
+            db_path = Path(self.DATABASE_URL.replace("sqlite:///", ""))
+            db_path.parent.mkdir(parents=True, exist_ok=True)
 
     # API Keys (optional)
     NEWS_API_KEY: Optional[str] = None
