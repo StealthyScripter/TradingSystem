@@ -33,7 +33,6 @@ class MarketDataService:
             return False
         return (time.time() - self.last_rate_limit_time) < self.rate_limit_cooldown
 
-    @staticmethod
     def get_current_prices(self, symbols: List[str]) -> Dict[str, float]:
         """Get real current prices with rate limiting and fallbacks"""
         service = MarketDataService()
