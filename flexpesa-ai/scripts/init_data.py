@@ -68,7 +68,7 @@ try:
         db.commit()
 
     print("✅ Sample data created successfully!")
-except:
+except Exception as e:
     print(f"❌ Error creating sample data: {e}")
     db.rollback()
     raise
