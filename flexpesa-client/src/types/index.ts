@@ -38,11 +38,10 @@ export interface PortfolioData {
   status: string;
 }
 
-export interface APIResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
+export type APIResponse<T> =
+  | { success: true; data: T }
+  | { success: false; error: string };
+
 
 export interface AssetCreate {
   account_id: number;
