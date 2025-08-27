@@ -86,7 +86,7 @@ flexpesa-ai/
 ├── scripts/
 │   └── init_data.py            # Database initialization script
 ├── data/
-│   └── portfolio.db            # SQLite database (created automatically)
+│   └── portfolioPostgreSQL            # PostgreSQL database (created automatically)
 ├── requirements.txt            # Python dependencies
 ├── run.py                      # Development server runner
 └── README.md                   # This file
@@ -150,7 +150,7 @@ Create a `.env` file in the `flexpesa-ai/` directory:
 
 ```env
 # Database
-DATABASE_URL=sqlite:///./data/portfolio.db
+DATABASE_URL=postgresql:///./data/portfolioPostgreSQL
 
 # Optional: News API for sentiment analysis
 NEWS_API_KEY=your_news_api_key_here
@@ -166,7 +166,7 @@ API_V1_STR=/api/v1
 class Settings:
     PROJECT_NAME: str = "Investment Portfolio MVP"
     API_V1_STR: str = "/api/v1"
-    DATABASE_URL: str = "sqlite:///./data/portfolio.db"
+    DATABASE_URL: str = "postgresql:///./data/portfolioPostgreSQL"
     NEWS_API_KEY: Optional[str] = None  # For AI sentiment analysis
 ```
 
@@ -225,8 +225,8 @@ curl -X POST http://localhost:8000/api/v1/portfolio/update-prices
 # Reinitialize database with fresh sample data
 python scripts/init_data.py
 
-# Access database directly (SQLite)
-sqlite3 data/portfolio.db
+# Access database directly (PostgreSQL)
+postgresql3 data/portfolioPostgreSQL
 .tables
 .schema accounts
 .schema assets
@@ -293,7 +293,7 @@ uvicorn app.main:app --port 8001
 #### 2. Database Issues
 ```bash
 # Delete and recreate database
-rm data/portfolio.db
+rm data/portfolioPostgreSQL
 python scripts/init_data.py
 ```
 

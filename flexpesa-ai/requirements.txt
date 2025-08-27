@@ -1,29 +1,44 @@
-# Minimal Investment Portfolio API Requirements
-# Fast startup, lightweight, production-ready
+# Investment Portfolio API Requirements - PostgreSQL ONLY
 
-# Core FastAPI dependencies (same as before)
+# Core FastAPI dependencies
 fastapi==0.104.1
 uvicorn==0.24.0
 pydantic==2.5.0
-sqlalchemy==2.0.23
 pydantic-settings==2.1.0
 
-# Essential data analysis (lightweight)
+# PostgreSQL Database (REQUIRED)
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+alembic==1.13.1
+
+# Data analysis (lightweight)
 pandas==2.1.4
 numpy==1.24.3
 
-# Market data (already included)
+# Market data
 yfinance==0.2.28
 
-# Async HTTP for news APIs (lightweight)
+# Async HTTP for news APIs
 aiohttp==3.9.1
 
-# HTTP requests (already used)
+# HTTP requests
 requests==2.31.0
 
-# Optional: News API client (lightweight)
+# Caching (Redis)
+redis==5.0.1
+
+# News API client (optional)
 newsapi-python==0.2.7
 
-# Development/testing (optional)
+# Development/testing
 pytest==7.4.3
 pytest-asyncio==0.21.1
+
+# Production WSGI server
+gunicorn==21.2.0
+
+# Environment management
+python-dotenv==1.0.0
+
+# Logging and monitoring
+structlog==23.2.0

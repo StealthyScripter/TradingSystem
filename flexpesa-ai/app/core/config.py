@@ -2,6 +2,7 @@ from pydantic_settings import BaseSettings
 from pydantic import ConfigDict
 from typing import Optional
 from pathlib import Path
+import os
 
 class Settings(BaseSettings):
     # Basic API Configuration
@@ -15,21 +16,37 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "your-secret-key-change-in-production-abc123def456ghi789jkl"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080  # 1 week
 
-    DATABASE_URL: str = "sqlite:///./data/portfolio.db"
+    # Database Configuration - PostgreSQL ONLY
+    DATABASE_URL: str = "postgresql://portfolio_user:portfolio_password@postgres:5432/portfolio_db"
+
+    # PostgreSQL Pool Settings
+    DB_POOL_SIZE: int = 10
+    DB_MAX_OVERFLOW: int = 20
+    DB_POOL_TIMEOUT: int = 30
+    DB_POOL_RECYCLE: int = 3600
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # Ensure data directory exists
-        if self.DATABASE_URL.startswith("sqlite:///"):
-            db_path = Path(self.DATABASE_URL.replace("sqlite:///", ""))
-            db_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Validate PostgreSQL URL only
+        if not self.DATABASE_URL.startswith("postgresql://"):
+            raise ValueError("DATABASE_URL must use PostgreSQL format: postgresql://...")
+
+        # Ensure Docker environment uses correct PostgreSQL URL
+        if os.getenv("DOCKER_ENV") == "true":
+            if not self.DATABASE_URL.startswith("postgresql://"):
+                self.DATABASE_URL = "postgresql://portfolio_user:portfolio_password@postgres:5432/portfolio_db"
 
     # API Keys (optional)
     NEWS_API_KEY: Optional[str] = None
     GEMINI_API_KEY: Optional[str] = None
 
-    # CORS Configuration
-    ALLOWED_ORIGINS: str = "http://localhost:3000,https://localhost:3000"
+    # CORS Configuration - use string instead of List to avoid JSON parsing
+    ALLOWED_ORIGINS: str = "http://localhost:3000,https://localhost:3000,http://frontend:3000"
+
+    def get_allowed_origins(self) -> list[str]:
+        """Convert ALLOWED_ORIGINS string to list"""
+        return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(",") if origin.strip()]
 
     # Rate Limiting
     RATE_LIMIT_PER_MINUTE: int = 60
@@ -44,12 +61,45 @@ class Settings(BaseSettings):
     KEEP_ALIVE_TIMEOUT: int = 5
     LOG_LEVEL: str = "INFO"
 
-    # Configure Pydantic to read from .env file and allow case-insensitive field names
+    # Redis Configuration (optional)
+    REDIS_URL: Optional[str] = "redis://redis:6379"
+    CACHE_TTL: int = 300  # 5 minutes
+
+    # Production Settings
+    SENTRY_DSN: Optional[str] = None
+
+    # Health Check Settings
+    HEALTH_CHECK_TIMEOUT: int = 30
+
+    # Configure Pydantic to read from .env file
     model_config = ConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
-        extra="ignore"  # Ignore extra fields not defined in the model
+        extra="ignore"
     )
 
-settings = Settings()
+def get_settings() -> Settings:
+    """Get settings instance with caching"""
+    return Settings()
+
+def validate_production_config() -> None:
+    """Validate production configuration"""
+    settings = get_settings()
+
+    errors = []
+
+    if settings.ENVIRONMENT == "production":
+        if settings.SECRET_KEY == "your-secret-key-change-in-production-abc123def456ghi789jkl":
+            errors.append("SECRET_KEY must be changed in production")
+
+        if settings.DEBUG:
+            errors.append("DEBUG must be False in production")
+
+        if not settings.DATABASE_URL.startswith("postgresql://"):
+            errors.append("DATABASE_URL must use PostgreSQL in production")
+
+    if errors:
+        raise ValueError("Production configuration errors: " + "; ".join(errors))
+
+settings = get_settings()
