@@ -93,11 +93,11 @@ export default function Header() {
                   Settings
                 </Link>
                 <Link
-                  href="/returns"
+                  href="/perfomance"
                   className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
                   onClick={() => setIsOpen(false)}
                 >
-                  Returns
+                  Perfomance
                 </Link>
               </li>
             </ul>
