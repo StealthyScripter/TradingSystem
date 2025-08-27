@@ -9,6 +9,7 @@ import AssetTable from '../components/AssetTable';
 import QuickActions from '../components/QuickActions';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
+import Header from '@/components/Header';
 
 export default function Dashboard() {
   const [portfolioData, setPortfolioData] = useState<PortfolioData | null>(null);
@@ -40,7 +41,7 @@ export default function Dashboard() {
   // Refresh prices
   const handleRefreshPrices = async () => {
     if (isRefreshing) return;
-    
+
     setIsRefreshing(true);
     try {
       const result = await portfolioAPI.updatePrices();
@@ -132,14 +133,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-100">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Investment Portfolio Dashboard
-          </h1>
-          <p className="text-gray-600 text-lg">
-            Real-time portfolio management with AI-powered insights
-          </p>
-        </div>
+        <Header />
 
         {/* Error Message */}
         {error && (
