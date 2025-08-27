@@ -121,3 +121,12 @@ class DatabaseManager:
 
 # Export commonly used objects
 __all__ = ["engine", "SessionLocal", "Base", "get_db", "create_tables", "check_database_connection", "DatabaseManager"]
+
+def get_database_info():
+    """Get database connection information for API response"""
+    return {
+        "database_type": "PostgreSQL",
+        "database_name": settings.DATABASE_URL.split("/")[-1] if "/" in settings.DATABASE_URL else "portfolio_db",
+        "connection_pool": DatabaseManager.get_pool_status() if settings.DATABASE_URL.startswith("postgresql://") else "N/A",
+        "status": "connected" if check_database_connection() else "disconnected"
+    }
