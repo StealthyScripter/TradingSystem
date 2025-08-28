@@ -2,7 +2,12 @@
 import { useState, useEffect, useRef } from "react";
 import Link from 'next/link';
 
-export default function Header() {
+interface HeaderProps {
+  title: string;
+  subtitle?:string;
+}
+
+export default function Header({title, subtitle}: HeaderProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -24,11 +29,11 @@ export default function Header() {
       {/* Title & Subtitle */}
       <div>
         <h1 className="text-4xl font-bold text-gray-900 mb-2">
-          Investment Portfolio Dashboard
+          {title}
         </h1>
-        <p className="text-gray-600 text-lg">
-          Real-time portfolio management with AI-powered insights
-        </p>
+        {subtitle && <p className="text-gray-600 text-lg">
+          {subtitle}
+        </p>}
       </div>
 
       {/* Hamburger Menu */}
