@@ -133,7 +133,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-100">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
-        <Header />
+        <Header title="Portfolio Dashboard" subtitle="Real-time portfolio management with AI-powered insights"/>
 
         {/* Error Message */}
         {error && (
