@@ -48,8 +48,8 @@ class LightweightAIService:
         ]
 
         # Compile patterns for speed
-        self.bullish_regex = [re.compile(pattern, re.IGNORECASE) for pattern in self.bullish_patterns]
-        self.bearish_regex = [re.compile(pattern, re.IGNORECASE) for pattern in self.bearish_patterns]
+        self.bullish_pattern = [re.compile(pattern, re.IGNORECASE) for pattern in self.bullish_patterns]
+        self.bearish_pattern = [re.compile(pattern, re.IGNORECASE) for pattern in self.bearish_patterns]
 
     async def analyze_portfolio_fast(self, accounts_data: List[Dict]) -> Dict:
         """Fast portfolio analysis with essential metrics only"""
@@ -174,7 +174,7 @@ class LightweightAIService:
         return rsi
 
     async def _get_basic_sentiment_batch(self, symbols: List[str]) -> Dict[str, SentimentData]:
-        """Fast sentiment analysis using regex patterns"""
+        """Fast sentiment analysis using pattern patterns"""
         if not self.news_api_key:
             return {}
 
@@ -199,7 +199,7 @@ class LightweightAIService:
         return sentiment_data
 
     async def _get_fast_sentiment(self, symbol: str) -> SentimentData:
-        """Fast sentiment using regex pattern matching"""
+        """Fast sentiment using pattern pattern matching"""
         try:
             # Get recent news (limited for speed)
             articles = await self._fetch_news_fast(symbol, max_articles=10)
@@ -207,7 +207,7 @@ class LightweightAIService:
             if not articles:
                 return self._get_neutral_sentiment()
 
-            # Fast regex-based sentiment analysis
+            # Fast pattern-based sentiment analysis
             total_bullish = 0
             total_bearish = 0
 
@@ -217,8 +217,8 @@ class LightweightAIService:
                 content = f"{title} {description}"
 
                 # Count pattern matches (fast)
-                bullish_matches = sum(len(pattern.findall(content)) for pattern in self.bullish_regex)
-                bearish_matches = sum(len(pattern.findall(content)) for pattern in self.bearish_regex)
+                bullish_matches = sum(len(pattern.findall(content)) for pattern in self.bullish_pattern)
+                bearish_matches = sum(len(pattern.findall(content)) for pattern in self.bearish_pattern)
 
                 total_bullish += bullish_matches
                 total_bearish += bearish_matches
