@@ -3,31 +3,53 @@ import { PortfolioData, Account, Asset, APIResponse, PerformancePortfolio, Portf
 
 // API Base URL configuration for different environments
 const getApiBaseUrl = (): string => {
-  // In production, use environment variable
-  if (process.env.NODE_ENV === 'production') {
-    return process.env.NEXT_PUBLIC_API_URL || 'https://api.yourdomain.com/api/v1';
-  }
-
-  // In development, check for Docker environment
+  // Priority 1: Explicit NEXT_PUBLIC_API_URL from environment
   if (process.env.NEXT_PUBLIC_API_URL) {
+    console.log('🔗 Using API URL from NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
     return process.env.NEXT_PUBLIC_API_URL;
   }
 
-  // Default for local development
-  return 'http://localhost:8000/api/v1';
+  // Priority 2: Build API URL from port environment variables
+  const backendPort = process.env.NEXT_PUBLIC_BACKEND_PORT || '8000';
+  const dockerBackendPort = process.env.NEXT_PUBLIC_DOCKER_BACKEND_PORT || '8080';
+
+  // Priority 3: Environment-specific defaults
+  if (process.env.NODE_ENV === 'production') {
+    // Production should always have NEXT_PUBLIC_API_URL set
+    console.warn('⚠️ Production environment without NEXT_PUBLIC_API_URL, using fallback');
+    return 'https://api.yourdomain.com/api/v1';
+  }
+
+  // Priority 4: Check if we're in a Docker environment
+  const isDocker = process.env.DOCKER_ENV === 'true' ||
+                   process.env.NEXT_PUBLIC_DOCKER_ENV === 'true' ||
+                   typeof window !== 'undefined' && window.location.port === '3001'; // Docker often shifts frontend port
+
+  if (isDocker) {
+    const dockerUrl = `http://localhost:${dockerBackendPort}/api/v1`;
+    console.log('🐳 Docker environment detected, using:', dockerUrl);
+    return dockerUrl;
+  }
+
+  // Priority 5: Default for local development (native backend)
+  const nativeUrl = `http://localhost:${backendPort}/api/v1`;
+  console.log('🔧 Native development environment, using:', nativeUrl);
+  return nativeUrl;
 };
 
+//Get the API base URl
 const API_BASE_URL = getApiBaseUrl();
 
 console.log('🔗 API Base URL:', API_BASE_URL);
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000, // Increased timeout for Docker startup
+  timeout: parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '15000'),
   headers: {
     'Content-Type': 'application/json',
   },
   // Retry configuration
+  withCredentials:true,
   validateStatus: (status) => status < 500, // Don't retry on client errors
 });
 
@@ -72,11 +94,11 @@ function handleApiError(error: unknown): string {
     const axiosError = error as AxiosError<ErrorResponse>;
 
     if (axiosError.code === 'ECONNREFUSED' || axiosError.code === 'ENOTFOUND') {
-      return 'Unable to connect to server. Please ensure the backend is running.';
+      return `Unable to connect to server at ${API_BASE_URL}. Please ensure the backend is running.`;
     }
 
     if (axiosError.code === 'ECONNABORTED') {
-      return 'Request timeout. The server is taking too long to respond.';
+      return `Request timeout. The server at ${API_BASE_URL} is taking too long to respond.`;
     }
 
     if (axiosError.response?.status === 502 || axiosError.response?.status === 503) {
@@ -129,6 +151,14 @@ async function retryRequest<T>(
   throw new Error('Max retries exceeded');
 }
 
+// Export API configuration for debugging
+export const apiConfig = {
+  baseURL: API_BASE_URL,
+  timeout: api.defaults.timeout,
+  environment: process.env.NODE_ENV,
+  isDocker: process.env.DOCKER_ENV === 'true',
+};
+
 export const portfolioAPI = {
   async getPortfolioSummary(): Promise<APIResponse<PortfolioData>> {
     try {
@@ -144,27 +174,6 @@ export const portfolioAPI = {
       };
     } catch (error: unknown) {
       console.error('Error fetching portfolio summary:', error);
-      return {
-        success: false,
-        error: handleApiError(error)
-      };
-    }
-  },
-
-  async updatePrices(): Promise<APIResponse<{ updated_assets: number; total_assets: number }>> {
-    try {
-      const response = await retryRequest(
-        () => api.post<{ updated_assets: number; total_assets: number }>('/portfolio/update-prices'),
-        2, // Fewer retries for POST requests
-        2000
-      );
-
-      return {
-        success: true,
-        data: response.data
-      };
-    } catch (error: unknown) {
-      console.error('Error updating prices:', error);
       return {
         success: false,
         error: handleApiError(error)
@@ -519,22 +528,6 @@ export const portfolioAPI = {
     }
   },
 
-  // Health check endpoint
-  async healthCheck(): Promise<APIResponse<{ status: string }>> {
-    try {
-      const response = await api.get<{ status: string }>('/');
-      return {
-        success: true,
-        data: response.data
-      };
-    } catch (error: unknown) {
-      return {
-        success: false,
-        error: handleApiError(error)
-      };
-    }
-  },
-
   async login(credentials: LoginRequest): Promise<APIResponse<{ user: User }>> {
     try {
       const formData = new FormData();
@@ -573,7 +566,48 @@ export const portfolioAPI = {
     } catch (error) {
       return { success: false, error: handleApiError(error) };
     }
-  }
+  },
+
+  // Health check endpoint with API config info
+  async healthCheck(): Promise<APIResponse<{ status: string; config: typeof apiConfig }>> {
+    try {
+      const response = await api.get<{ status: string }>('/');
+      return {
+        success: true,
+        data: {
+          ...response.data,
+          config: apiConfig
+        }
+      };
+    } catch (error: unknown) {
+      return {
+        success: false,
+        error: handleApiError(error)
+      };
+    }
+  },
+
+  // ... rest of your existing API methods remain the same ...
+  async updatePrices(): Promise<APIResponse<{ updated_assets: number; total_assets: number }>> {
+    try {
+      const response = await retryRequest(
+        () => api.post<{ updated_assets: number; total_assets: number }>('/portfolio/update-prices'),
+        2,
+        2000
+      );
+
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error: unknown) {
+      console.error('Error updating prices:', error);
+      return {
+        success: false,
+        error: handleApiError(error)
+      };
+    }
+  },
 
 };
 

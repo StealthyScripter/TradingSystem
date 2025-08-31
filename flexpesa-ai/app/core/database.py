@@ -2,6 +2,7 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import QueuePool
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 import logging
 from .config import settings
 
@@ -23,11 +24,26 @@ if settings.DATABASE_URL.startswith("postgresql://"):
         "pool_recycle": settings.DB_POOL_RECYCLE,
         "pool_pre_ping": True,  # Validate connections before use
     })
+
+    # Create async engine for FastAPI-Users (convert postgresql:// to postgresql+asyncpg://)
+    async_database_url = settings.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
+    async_engine = create_async_engine(
+        async_database_url,
+        echo=settings.DEBUG,
+        future=True,
+        pool_size=settings.DB_POOL_SIZE,
+        max_overflow=settings.DB_MAX_OVERFLOW,
+        pool_timeout=settings.DB_POOL_TIMEOUT,
+        pool_recycle=settings.DB_POOL_RECYCLE,
+        pool_pre_ping=True,
+    )
 else:
     # SQLite settings (for development)
     engine_kwargs.update({
         "connect_args": {"check_same_thread": False}
     })
+    # For SQLite, we'll use a simple async wrapper
+    async_engine = None
 
 # Create database engine
 engine = create_engine(settings.DATABASE_URL, **engine_kwargs)
@@ -35,13 +51,25 @@ engine = create_engine(settings.DATABASE_URL, **engine_kwargs)
 # Create session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+# Create async session factory for FastAPI-Users
+if async_engine:
+    AsyncSessionLocal = sessionmaker(
+        bind=async_engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+        autocommit=False,
+        autoflush=False,
+    )
+else:
+    AsyncSessionLocal = None
+
 # Create base class for models
 Base = declarative_base()
 
 # Database event listeners for PostgreSQL
 if settings.DATABASE_URL.startswith("postgresql://"):
     @event.listens_for(engine, "connect")
-    def set_sqlite_pragma(dbapi_connection, connection_record):
+    def set_postgresql_pragma(dbapi_connection, connection_record):
         """Set PostgreSQL connection parameters"""
         pass
 
@@ -63,6 +91,21 @@ def get_db():
         raise
     finally:
         db.close()
+
+async def get_async_db():
+    """Dependency to get async database session for FastAPI-Users"""
+    if not AsyncSessionLocal:
+        raise RuntimeError("Async database not configured. Use PostgreSQL with asyncpg.")
+
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        except Exception as e:
+            logger.error(f"Async database session error: {e}")
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
 
 def create_tables():
     """Create all database tables"""
@@ -120,13 +163,14 @@ class DatabaseManager:
         return {"status": "SQLite - no pooling"}
 
 # Export commonly used objects
-__all__ = ["engine", "SessionLocal", "Base", "get_db", "create_tables", "check_database_connection", "DatabaseManager"]
+__all__ = ["engine", "SessionLocal", "AsyncSessionLocal", "Base", "get_db", "get_async_db", "create_tables", "check_database_connection", "DatabaseManager"]
 
 def get_database_info():
     """Get database connection information for API response"""
     return {
-        "database_type": "PostgreSQL",
+        "database_type": "PostgreSQL" if settings.DATABASE_URL.startswith("postgresql://") else "SQLite",
         "database_name": settings.DATABASE_URL.split("/")[-1] if "/" in settings.DATABASE_URL else "portfolio_db",
         "connection_pool": DatabaseManager.get_pool_status() if settings.DATABASE_URL.startswith("postgresql://") else "N/A",
         "status": "connected" if check_database_connection() else "disconnected"
     }
+    
