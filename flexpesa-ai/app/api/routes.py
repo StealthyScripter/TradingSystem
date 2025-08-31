@@ -8,6 +8,8 @@ import uuid
 from datetime import datetime
 
 from app.core.database import get_db
+from app.core.auth import current_active_user
+from app.models.user import User
 from app.schemas.portfolio import Account, AccountCreate, Asset, AssetCreate, PortfolioAnalysis
 from app.models.portfolio import Account as AccountModel, Asset as AssetModel
 from app.services.portfolio_service import PortfolioService
@@ -84,10 +86,10 @@ router = APIRouter()
 
 # ============ EXISTING ROUTES ============
 @router.get("/portfolio/summary")
-async def get_portfolio_summary(db: Session = Depends(get_db)):
+async def get_portfolio_summary(db: Session = Depends(get_db), current_user: User = Depends(current_active_user)):
     """Get complete portfolio summary with enhanced AI analysis - MAIN ENDPOINT"""
     service = PortfolioService(db)
-    return await service.get_portfolio_summary()
+    return await service.get_portfolio_summary(user_id=current_user.id)
 
 @router.post("/portfolio/update-prices")
 async def update_prices(db: Session = Depends(get_db)):

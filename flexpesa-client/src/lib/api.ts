@@ -1,5 +1,5 @@
 import axios, { AxiosError } from 'axios';
-import { PortfolioData, Account, Asset, APIResponse, PerformancePortfolio, PortfolioSummary, HoldingCreate, PortfolioCreate, HoldingResponse } from '@/types';
+import { PortfolioData, Account, Asset, APIResponse, PerformancePortfolio, PortfolioSummary, HoldingCreate, PortfolioCreate, HoldingResponse, LoginRequest, RegisterRequest, User } from '@/types';
 
 // API Base URL configuration for different environments
 const getApiBaseUrl = (): string => {
@@ -533,7 +533,48 @@ export const portfolioAPI = {
         error: handleApiError(error)
       };
     }
+  },
+
+  async login(credentials: LoginRequest): Promise<APIResponse<{ user: User }>> {
+    try {
+      const formData = new FormData();
+      formData.append('username', credentials.email);
+      formData.append('password', credentials.password);
+
+      const response = await api.post<{ user: User }>('/auth/cookie/login', formData);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: handleApiError(error) };
+    }
+  },
+
+  async register(userData: RegisterRequest): Promise<APIResponse<User>> {
+    try {
+      const response = await api.post<User>('/auth/register', userData);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: handleApiError(error) };
+    }
+  },
+
+  async logout(): Promise<APIResponse<void>> {
+    try {
+      await api.post('/auth/cookie/logout');
+      return { success: true, data: undefined };
+    } catch (error) {
+      return { success: false, error: handleApiError(error) };
+    }
+  },
+
+  async getCurrentUser(): Promise<APIResponse<User>> {
+    try {
+      const response = await api.get<User>('/users/me');
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: handleApiError(error) };
+    }
   }
+
 };
 
 export default api;
