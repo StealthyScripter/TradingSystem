@@ -9,7 +9,7 @@ class Account(Base):
     __tablename__ = "accounts"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"),nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     name = Column(String, index=True)  # "Wells Fargo", "Stack Well", etc.
     account_type = Column(String)      # "brokerage", "retirement", etc.
     balance = Column(Float, default=0.0)
