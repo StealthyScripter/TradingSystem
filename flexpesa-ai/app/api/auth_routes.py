@@ -1,30 +1,61 @@
-from fastapi import APIRouter
-from fastapi_users import schemas
-from app.core.auth import fastapi_users, cookie_authentication, jwt_authentication
+from fastapi import APIRouter, HTTPException, Depends, status
+from typing import Optional
+from pydantic import BaseModel
+
+# Simple auth models for now
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+    first_name: str
+    last_name: str
+
+class User(BaseModel):
+    id: str
+    email: str
+    first_name: str
+    last_name: str
+    is_active: bool = True
 
 router = APIRouter()
 
-# Include authentication routes
-router.include_router(
-    fastapi_users.get_auth_router(cookie_authentication),
-    prefix="/auth/cookie",
-    tags=["auth"]
-)
+@router.post("/auth/cookie/login")
+async def mock_login(login_data: LoginRequest):
+    """Mock login endpoint - replace with real authentication"""
+    # For now, accept any login for development
+    if login_data.email and login_data.password:
+        return {"message": "Login successful", "status": "ok"}
+    else:
+        raise HTTPException(status_code=400, detail="Invalid credentials")
 
-router.include_router(
-    fastapi_users.get_auth_router(jwt_authentication),
-    prefix="/auth/jwt",
-    tags=["auth"]
-)
+@router.post("/auth/register")
+async def mock_register(user_data: RegisterRequest):
+    """Mock registration endpoint - replace with real authentication"""
+    # For now, accept any registration for development
+    return {
+        "id": "mock-user-id",
+        "email": user_data.email,
+        "first_name": user_data.first_name,
+        "last_name": user_data.last_name,
+        "is_active": True
+    }
 
-router.include_router(
-    fastapi_users.get_register_router(schemas.UserRead, schemas.UserCreate),
-    prefix="/auth",
-    tags=["auth"]
-)
+@router.post("/auth/cookie/logout")
+async def mock_logout():
+    """Mock logout endpoint"""
+    return {"message": "Logged out successfully"}
 
-router.include_router(
-    fastapi_users.get_users_router(schemas.UserRead, schemas.UserUpdate),
-    prefix="/users",
-    tags=["users"]
-)
+@router.get("/users/me")
+async def get_current_user():
+    """Mock current user endpoint - replace with real authentication"""
+    # For development, return a mock user
+    return {
+        "id": "mock-user-id",
+        "email": "admin@portfolio.com",
+        "first_name": "Portfolio",
+        "last_name": "Admin",
+        "is_active": True
+    }

@@ -1,24 +1,24 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request, status
 from sqlalchemy.orm import Session
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 import asyncio
 import logging
 import pandas as pd
-import uuid
 from datetime import datetime
 
 from app.core.database import get_db
-# from app.core.auth import current_active_user
-# from app.models.user import User
+from app.middleware.clerk_auth import get_current_user, get_current_user_optional, get_user_id
 from app.schemas.portfolio import Account, AccountCreate, Asset, AssetCreate, PortfolioAnalysis
 from app.models.portfolio import Account as AccountModel, Asset as AssetModel
 from app.services.portfolio_service import PortfolioService
-from app.services.perfomance  import PerformanceService
+from app.services.perfomance import PerformanceService
+from app.middleware.logging import business_logger
+from app.middleware.rate_limit import market_data_limiter, ai_analysis_limiter
 
-# Import additional Pydantic models for performance tracking
+# Import Pydantic models for request/response
 from pydantic import BaseModel, Field
 
-# Extended Pydantic Models for Portfolio Performance
+# Enhanced Pydantic Models for Portfolio Performance
 class BenchmarkComparisonResponse(BaseModel):
     name: str
     performance: float
@@ -48,7 +48,7 @@ class HoldingCreate(BaseModel):
     symbol: str = Field(..., min_length=1, max_length=10)
     quantity: float = Field(..., gt=0)
     purchase_price: float = Field(..., gt=0)
-    purchase_date: str =  Field(..., pattern=r'^\d{4}-\d{2}-\d{2}$')
+    purchase_date: str = Field(..., pattern=r'^\d{4}-\d{2}-\d{2}$')
 
 class HoldingResponse(BaseModel):
     symbol: str
@@ -82,319 +82,410 @@ class PortfolioSummaryResponse(BaseModel):
     average_return: float
     average_sharpe_ratio: float
 
+class UserProfileResponse(BaseModel):
+    user_id: str
+    email: Optional[str]
+    first_name: Optional[str]
+    last_name: Optional[str]
+    total_accounts: int
+    total_portfolio_value: float
+    last_active: str
+
 router = APIRouter()
 
-# ============ EXISTING ROUTES ============
+# ============ AUTHENTICATION & USER ROUTES ============
+
+@router.get("/auth/profile", response_model=UserProfileResponse)
+async def get_user_profile(
+    request: Request,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user)
+):
+    """Get current user's profile and portfolio summary"""
+    try:
+        user_id = user.get("sub")
+
+        # Get user's accounts
+        accounts = db.query(AccountModel).filter(
+            AccountModel.clerk_user_id == user_id,
+            AccountModel.is_active == True
+        ).all()
+
+        # Calculate total portfolio value
+        total_value = sum(account.total_value for account in accounts)
+
+        return UserProfileResponse(
+            user_id=user_id,
+            email=user.get("email"),
+            first_name=user.get("first_name"),
+            last_name=user.get("last_name"),
+            total_accounts=len(accounts),
+            total_portfolio_value=total_value,
+            last_active=datetime.utcnow().isoformat()
+        )
+
+    except Exception as e:
+        logging.error(f"Error getting user profile: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get user profile")
+
+@router.get("/auth/config")
+async def get_auth_config():
+    """Get authentication configuration for frontend"""
+    from app.core.config import get_clerk_config
+
+    config = get_clerk_config()
+    return {
+        "provider": "clerk",
+        "configured": config["configured"],
+        "publishable_key": config["publishable_key"],
+        "domain": config["domain"]
+    }
+
+# ============ CORE PORTFOLIO ROUTES ============
+
 @router.get("/portfolio/summary")
-async def get_portfolio_summary(db: Session = Depends(get_db)):
+async def get_portfolio_summary(
+    request: Request,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user)
+):
     """Get complete portfolio summary with enhanced AI analysis - MAIN ENDPOINT"""
-    service = PortfolioService(db)
-    return await service.get_portfolio_summary(user_id=None)
+    try:
+        user_id = user.get("sub")
+        service = PortfolioService(db)
+
+        # Get user-specific portfolio data
+        summary = await service.get_portfolio_summary(clerk_user_id=user_id)
+
+        # Log business activity
+        business_logger.log_portfolio_update(
+            user_id=user_id,
+            portfolio_value=summary.get("total_value", 0),
+            assets_updated=summary.get("total_assets", 0)
+        )
+
+        return summary
+
+    except Exception as e:
+        logging.error(f"Error getting portfolio summary: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get portfolio summary")
 
 @router.post("/portfolio/update-prices")
-async def update_prices(db: Session = Depends(get_db)):
-    """Update current prices for all assets"""
-    service = PortfolioService(db)
-    return await service.update_prices()
+async def update_prices(
+    request: Request,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user)
+):
+    """Update current prices for user's assets"""
+    try:
+        # Rate limiting for expensive operations
+        user_id = user.get("sub")
+        if not market_data_limiter.is_allowed(f"user:{user_id}"):
+            raise HTTPException(
+                status_code=429,
+                detail="Rate limit exceeded for price updates"
+            )
+
+        service = PortfolioService(db)
+        result = await service.update_prices(clerk_user_id=user_id)
+
+        # Log business activity
+        business_logger.log_market_data_fetch(
+            symbols=result.get("symbols", []),
+            success_count=result.get("updated_assets", 0),
+            duration=result.get("duration", 0)
+        )
+
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error updating prices: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update prices")
 
 @router.post("/accounts/", response_model=Account)
-def create_account(account: AccountCreate, db: Session = Depends(get_db)):
+def create_account(
+    account: AccountCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user)
+):
     """Create new investment account"""
-    service = PortfolioService(db)
-    return service.create_account(account)
+    try:
+        user_id = user.get("sub")
+        service = PortfolioService(db)
+
+        # Add user ID to account creation
+        result = service.create_account(account, clerk_user_id=user_id)
+
+        # Log business activity
+        business_logger.log_user_action(
+            user_id=user_id,
+            action="create_account",
+            details={"account_name": account.name, "account_type": account.account_type}
+        )
+
+        return result
+
+    except Exception as e:
+        logging.error(f"Error creating account: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create account")
 
 @router.get("/accounts/", response_model=List[Account])
-def get_accounts(db: Session = Depends(get_db)):
-    """Get all accounts"""
-    accounts = db.query(AccountModel).all()
-    return accounts
+def get_accounts(
+    request: Request,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user)
+):
+    """Get all user's accounts"""
+    try:
+        user_id = user.get("sub")
+
+        accounts = db.query(AccountModel).filter(
+            AccountModel.clerk_user_id == user_id,
+            AccountModel.is_active == True
+        ).all()
+
+        return accounts
+
+    except Exception as e:
+        logging.error(f"Error getting accounts: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get accounts")
 
 @router.post("/assets/", response_model=Asset)
-def add_asset(asset: AssetCreate, db: Session = Depends(get_db)):
+def add_asset(
+    asset: AssetCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user)
+):
     """Add asset to account"""
-    service = PortfolioService(db)
-    return service.add_asset(asset)
+    try:
+        user_id = user.get("sub")
+
+        # Verify account belongs to user
+        account = db.query(AccountModel).filter(
+            AccountModel.id == asset.account_id,
+            AccountModel.clerk_user_id == user_id,
+            AccountModel.is_active == True
+        ).first()
+
+        if not account:
+            raise HTTPException(status_code=404, detail="Account not found")
+
+        service = PortfolioService(db)
+        result = service.add_asset(asset)
+
+        # Log business activity
+        business_logger.log_user_action(
+            user_id=user_id,
+            action="add_asset",
+            details={
+                "symbol": asset.symbol,
+                "shares": asset.shares,
+                "account_id": asset.account_id
+            }
+        )
+
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error adding asset: {e}")
+        raise HTTPException(status_code=500, detail="Failed to add asset")
 
 # ============ ENHANCED PORTFOLIO PERFORMANCE ROUTES ============
 
 @router.get("/portfolios/performance", response_model=List[PerformancePortfolioResponse])
-async def get_all_portfolio_performance(db: Session = Depends(get_db)):
-    """Get performance analysis for all portfolios"""
+async def get_all_portfolio_performance(
+    request: Request,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user)
+):
+    """Get performance analysis for all user's portfolios"""
     try:
+        user_id = user.get("sub")
         performance_service = PerformanceService(db)
-        return await performance_service.get_all_portfolio_performance()
+
+        return await performance_service.get_all_portfolio_performance(
+            clerk_user_id=user_id
+        )
+
     except Exception as e:
         logging.error(f"Error getting portfolio performance: {e}")
         raise HTTPException(status_code=500, detail="Failed to get portfolio performance")
 
 @router.get("/portfolios/performance/summary", response_model=PortfolioSummaryResponse)
-async def get_portfolio_performance_summary(db: Session = Depends(get_db)):
-    """Get summary statistics across all portfolios"""
+async def get_portfolio_performance_summary(
+    request: Request,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user)
+):
+    """Get summary statistics across all user's portfolios"""
     try:
+        user_id = user.get("sub")
         performance_service = PerformanceService(db)
-        return await performance_service.get_portfolio_summary()
+
+        return await performance_service.get_portfolio_summary(clerk_user_id=user_id)
+
     except Exception as e:
         logging.error(f"Error getting portfolio summary: {e}")
         raise HTTPException(status_code=500, detail="Failed to get portfolio summary")
 
 @router.get("/portfolios/{portfolio_id}/performance", response_model=PerformancePortfolioResponse)
-async def get_single_portfolio_performance(portfolio_id: str, db: Session = Depends(get_db)):
+async def get_single_portfolio_performance(
+    portfolio_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user)
+):
     """Get performance metrics for a specific portfolio (account)"""
     try:
+        user_id = user.get("sub")
         performance_service = PerformanceService(db)
-        return await performance_service.get_portfolio_performance(portfolio_id)
+
+        return await performance_service.get_portfolio_performance(
+            portfolio_id, clerk_user_id=user_id
+        )
+
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logging.error(f"Error getting portfolio performance: {e}")
         raise HTTPException(status_code=500, detail="Failed to get portfolio performance")
 
-@router.post("/portfolios/", response_model=PerformancePortfolioResponse, status_code=status.HTTP_201_CREATED)
-async def create_portfolio_with_performance(portfolio: PortfolioCreateExtended, db: Session = Depends(get_db)):
-    """Create a new portfolio with initial holdings and performance tracking"""
-    try:
-        performance_service = PerformanceService(db)
-        return await performance_service.create_portfolio_with_holdings(portfolio)
-    except Exception as e:
-        logging.error(f"Error creating portfolio: {e}")
-        raise HTTPException(status_code=500, detail="Failed to create portfolio")
-
-@router.put("/portfolios/{portfolio_id}/performance", response_model=PerformancePortfolioResponse)
-async def update_portfolio_with_performance(
-    portfolio_id: str,
-    portfolio_update: PortfolioUpdate,
-    db: Session = Depends(get_db)
-):
-    """Update existing portfolio and recalculate performance"""
-    try:
-        performance_service = PerformanceService(db)
-        return await performance_service.update_portfolio(portfolio_id, portfolio_update)
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        logging.error(f"Error updating portfolio: {e}")
-        raise HTTPException(status_code=500, detail="Failed to update portfolio")
-
-@router.delete("/portfolios/{portfolio_id}/performance", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_portfolio_with_performance(portfolio_id: str, db: Session = Depends(get_db)):
-    """Delete a portfolio and all related performance data"""
-    try:
-        performance_service = PerformanceService(db)
-        await performance_service.delete_portfolio(portfolio_id)
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        logging.error(f"Error deleting portfolio: {e}")
-        raise HTTPException(status_code=500, detail="Failed to delete portfolio")
-
-@router.get("/portfolios/{portfolio_id}/holdings", response_model=List[HoldingResponse])
-async def get_portfolio_holdings_with_performance(portfolio_id: str, db: Session = Depends(get_db)):
-    """Get detailed holdings with performance metrics for a portfolio"""
-    try:
-        performance_service = PerformanceService(db)
-        return await performance_service.get_portfolio_holdings(portfolio_id)
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        logging.error(f"Error getting holdings: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get portfolio holdings")
-
-@router.post("/portfolios/{portfolio_id}/holdings")
-async def add_holdings_to_portfolio(
-    portfolio_id: str,
-    holdings: List[HoldingCreate],
-    db: Session = Depends(get_db)
-):
-    """Add or update holdings for a portfolio with performance recalculation"""
-    try:
-        performance_service = PerformanceService(db)
-        result = await performance_service.add_holdings_to_portfolio(portfolio_id, holdings)
-        return {"message": "Holdings added successfully", "updated": result}
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        logging.error(f"Error adding holdings: {e}")
-        raise HTTPException(status_code=500, detail="Failed to add holdings")
-
-@router.post("/portfolios/{portfolio_id}/daily-data")
-async def update_daily_performance_data(
-    portfolio_id: str,
-    daily_data: DailyDataUpdate,
-    db: Session = Depends(get_db)
-):
-    """Update daily price data and recalculate performance metrics"""
-    try:
-        performance_service = PerformanceService(db)
-        result = await performance_service.update_daily_data(portfolio_id, daily_data)
-        return {"message": "Daily data updated successfully", "result": result}
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        logging.error(f"Error updating daily data: {e}")
-        raise HTTPException(status_code=500, detail="Failed to update daily data")
-
-@router.post("/portfolios/{portfolio_id}/recalculate")
-async def recalculate_portfolio_performance(portfolio_id: str, db: Session = Depends(get_db)):
-    """Force recalculation of portfolio performance metrics"""
-    try:
-        performance_service = PerformanceService(db)
-        result = await performance_service.recalculate_performance(portfolio_id)
-        return {"message": "Performance recalculated successfully", "result": result}
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        logging.error(f"Error recalculating performance: {e}")
-        raise HTTPException(status_code=500, detail="Failed to recalculate performance")
-
-# ============ EXISTING AI ANALYSIS ROUTES ============
+# ============ AI ANALYSIS ROUTES ============
 
 @router.post("/analysis/asset/{symbol}")
-async def get_enhanced_asset_analysis(symbol: str, db: Session = Depends(get_db)):
+async def get_enhanced_asset_analysis(
+    symbol: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user)
+):
     """Get comprehensive AI analysis for a specific asset"""
     try:
+        user_id = user.get("sub")
+
+        # Rate limiting for AI operations
+        if not ai_analysis_limiter.is_allowed(f"user:{user_id}"):
+            raise HTTPException(
+                status_code=429,
+                detail="Rate limit exceeded for AI analysis"
+            )
+
         service = PortfolioService(db)
+        start_time = datetime.utcnow()
+
         analysis = await service.get_enhanced_asset_analysis(symbol.upper())
+
+        processing_time = (datetime.utcnow() - start_time).total_seconds()
+
+        # Log business activity
+        business_logger.log_ai_analysis(
+            user_id=user_id,
+            analysis_type="asset_analysis",
+            processing_time=processing_time
+        )
+
         return {
             "success": True,
             "symbol": symbol.upper(),
             "analysis": analysis,
             "timestamp": pd.Timestamp.now().isoformat()
         }
+
+    except HTTPException:
+        raise
     except Exception as e:
         logging.error(f"Enhanced asset analysis failed for {symbol}: {e}")
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
 @router.post("/analysis/quick")
-def quick_analysis(symbols: List[str], db: Session = Depends(get_db)):
+def quick_analysis(
+    symbols: List[str],
+    request: Request,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user)
+):
     """Quick AI analysis for specific symbols"""
-    service = PortfolioService(db)
-
-    results = {}
-    for symbol in symbols:
-        # Basic analysis using the lightweight service
-        results[symbol] = {
-            "sentiment": "neutral",
-            "confidence": 0.6,
-            "recommendation": "HOLD",
-            "note": "Lightweight analysis - upgrade for enhanced features"
-        }
-
-    return {"analysis": results}
-
-# Background task for periodic analysis updates
-@router.post("/analysis/schedule-update")
-async def schedule_analysis_update(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    """Schedule background update of all AI analysis data"""
     try:
-        def run_background_analysis():
-            from app.core.database import SessionLocal
-            background_db = SessionLocal()
-            try:
-                service = PortfolioService(background_db)
-                # Simple background task - could be expanded
-                print("🔄 Background analysis scheduled")
-            finally:
-                background_db.close()
-
-        background_tasks.add_task(run_background_analysis)
-
-        return {
-            "success": True,
-            "message": "Analysis update scheduled",
-            "timestamp": pd.Timestamp.now().isoformat()
-        }
-
-    except Exception as e:
-        logging.error(f"Failed to schedule analysis update: {e}")
-        raise HTTPException(status_code=500, detail=f"Scheduling failed: {str(e)}")
-
-# Additional simplified endpoints for compatibility
-@router.get("/analysis/market-overview")
-async def get_market_overview(db: Session = Depends(get_db)):
-    """Get basic market overview"""
-    return {
-        "success": True,
-        "market_overview": {
-            "overall_sentiment": "NEUTRAL",
-            "fear_level": "MEDIUM",
-            "portfolio_impact": {
-                "recommendation": "BALANCED",
-                "risk_level": "MEDIUM"
-            }
-        },
-        "message": "Simplified market overview - upgrade for detailed analysis",
-        "timestamp": pd.Timestamp.now().isoformat()
-    }
-
-@router.post("/analysis/technical-batch")
-async def get_technical_analysis_batch(symbols: List[str], db: Session = Depends(get_db)):
-    """Get basic technical analysis for multiple symbols"""
-    try:
-        if len(symbols) > 20:
+        if len(symbols) > 20:  # Limit for performance
             raise HTTPException(status_code=400, detail="Maximum 20 symbols allowed")
 
-        # Simplified technical analysis
-        results = {}
-        for symbol in symbols:
-            results[symbol] = {
-                "rsi": 50.0,
-                "rsi_signal": "NEUTRAL",
-                "trend": "NEUTRAL",
-                "volatility": "MEDIUM",
-                "momentum": "NEUTRAL",
-                "note": "Simplified analysis - upgrade for detailed technical indicators"
-            }
-
-        return {
-            "success": True,
-            "technical_analysis": results,
-            "symbols_analyzed": len(results),
-            "timestamp": pd.Timestamp.now().isoformat()
-        }
-
-    except Exception as e:
-        logging.error(f"Batch technical analysis failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Technical analysis failed: {str(e)}")
-
-@router.post("/analysis/sentiment-batch")
-async def get_sentiment_analysis_batch(symbols: List[str], db: Session = Depends(get_db)):
-    """Get basic sentiment analysis for multiple symbols"""
-    try:
-        if len(symbols) > 10:
-            raise HTTPException(status_code=400, detail="Maximum 10 symbols allowed for sentiment analysis")
-
+        user_id = user.get("sub")
         service = PortfolioService(db)
 
-        # Check if NEWS_API_KEY is available
-        if not service.ai_service.news_api_key:
-            return {
-                "success": False,
-                "error": "News API key not configured",
-                "message": "Sentiment analysis requires NEWS_API_KEY in environment variables"
-            }
-
-        # Simplified sentiment analysis
         results = {}
         for symbol in symbols:
             results[symbol] = {
-                "sentiment_score": 0.0,
-                "sentiment": "NEUTRAL",
-                "confidence": 0.5,
-                "strength": "LOW",
-                "news_count": 0,
-                "note": "Simplified sentiment analysis"
+                "sentiment": "neutral",
+                "confidence": 0.6,
+                "recommendation": "HOLD",
+                "note": "Quick analysis - use enhanced analysis for detailed insights"
             }
 
+        # Log business activity
+        business_logger.log_user_action(
+            user_id=user_id,
+            action="quick_analysis",
+            details={"symbols": symbols, "count": len(symbols)}
+        )
+
+        return {"analysis": results}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Quick analysis failed: {e}")
+        raise HTTPException(status_code=500, detail="Analysis failed")
+
+# ============ PUBLIC ROUTES (No Authentication Required) ============
+
+@router.get("/market/status")
+async def get_market_status(user: dict = Depends(get_current_user_optional)):
+    """Get current market status (public endpoint)"""
+    try:
+        # Basic market status - could be enhanced with real market data
         return {
-            "success": True,
-            "sentiment_analysis": results,
-            "symbols_analyzed": len(results),
-            "timestamp": pd.Timestamp.now().isoformat()
+            "status": "open",  # Could check actual market hours
+            "timestamp": datetime.utcnow().isoformat(),
+            "message": "Market data available",
+            "authenticated": user is not None
         }
 
     except Exception as e:
-        logging.error(f"Batch sentiment analysis failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Sentiment analysis failed: {str(e)}")
+        logging.error(f"Error getting market status: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get market status")
+
+@router.get("/health/detailed")
+async def detailed_health_check(
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user_optional)
+):
+    """Detailed health check including database connectivity"""
+    try:
+        # Test database connection
+        db.execute("SELECT 1")
+
+        health_data = {
+            "status": "healthy",
+            "timestamp": datetime.utcnow().isoformat(),
+            "services": {
+                "database": "healthy",
+                "authentication": "healthy" if user else "not_authenticated",
+                "api": "healthy"
+            },
+            "version": "1.0.0"
+        }
+
+        return health_data
+
+    except Exception as e:
+        logging.error(f"Health check failed: {e}")
+        raise HTTPException(status_code=503, detail="Service unhealthy")
 
 # ============ UTILITY ROUTES ============
 
@@ -426,3 +517,4 @@ async def get_available_metrics():
             "value_at_risk": "Potential loss in worst-case scenarios"
         }
     }
+    
