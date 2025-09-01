@@ -1,47 +1,146 @@
-
 # Core FastAPI dependencies
 fastapi==0.104.1
-uvicorn==0.24.0
+uvicorn[standard]==0.24.0
 pydantic==2.5.0
 pydantic-settings==2.1.0
 
-# PostgreSQL Database (REQUIRED)
+# Database - PostgreSQL ONLY (Production Ready)
 sqlalchemy==2.0.23
 psycopg2-binary==2.9.9
 alembic==1.13.1
 
-# Async PostgreSQL support for FastAPI-Users
-asyncpg==0.29.0
+# Authentication - Clerk JWT
+pyjwt[crypto]==2.8.0
+cryptography==41.0.8
 
-# Data analysis (lightweight)
+# HTTP requests and async
+requests==2.31.0
+aiohttp==3.9.1
+httpx==0.25.2
+
+# Data analysis and market data
 pandas==2.1.4
 numpy==1.24.3
-
-# Market data
 yfinance==0.2.28
 
-# Authentication (FastAPI-Users v13.x compatible)
-fastapi-users[sqlalchemy]==13.0.0
-fastapi-users[oauth]==13.0.0
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
-python-multipart
+# Environment management
+python-dotenv==1.0.0
 
-# HTTP requests
-requests==2.31.0
+# Redis (optional but recommended for production)
+redis==5.0.1
+hiredis==2.2.3
 
-# Development/testing
-pytest==7.4.3
-pytest-asyncio==0.21.1
+# Background tasks and job scheduling
+celery==5.3.4
+kombu==5.3.4
 
 # Production server
 gunicorn==21.2.0
 
-# Environment management
-python-dotenv==1.0.0
+# Security and middleware
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6
 
-# Environment management
-python-dotenv==1.0.0
+# Logging and monitoring
+structlog==23.2.0
 
-# Async PostgreSQL support for FastAPI-Users
-asyncpg==0.29.0
+# File processing
+openpyxl==3.1.2
+
+# Development and testing (optional)
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+black==23.11.0
+isort==5.12.0
+flake8==6.1.0
+
+# API documentation
+email-validator==2.1.0
+
+# Performance and optimization
+orjson==3.9.10
+
+# Production monitoring (optional)
+sentry-sdk[fastapi]==1.38.0
+prometheus-client==0.19.0
+
+# File validation
+python-magic==0.4.27
+
+# Rate limiting (backup implementation)
+slowapi==0.1.9
+limits==3.6.0
+
+# Async utilities
+asyncio-throttle==1.0.2
+
+# JSON Web Tokens
+jwcrypto==1.5.0
+
+# HTTP client improvements
+urllib3==2.1.0
+
+# Data validation
+validators==0.22.0
+
+# Timezone handling
+pytz==2023.3
+
+# Configuration validation
+dynaconf==3.2.4
+
+# Health checks
+psutil==5.9.6
+
+# String utilities
+python-slugify==8.0.1
+
+# Date utilities
+python-dateutil==2.8.2
+
+# Async database utilities (optional)
+databases[postgresql]==0.8.0
+
+# Production-grade WSGI server alternatives
+waitress==2.1.2
+
+# Environment variable validation
+environs==10.0.0
+
+# Background job monitoring
+flower==2.0.1
+
+# Excel file handling
+xlsxwriter==3.1.9
+
+# PDF generation (optional)
+reportlab==4.0.7
+
+# Email utilities (optional)
+emails==0.6.0
+
+# Image processing (optional)
+Pillow==10.1.0
+
+# Scientific computing optimizations
+scipy==1.11.4
+
+# Memory optimization
+pympler==0.9
+
+# Configuration management
+python-decouple==3.8
+
+# JSON schema validation
+jsonschema==4.20.0
+
+# HTTP status codes
+http-status==0.3.1
+
+# Async utilities
+anyio==4.1.0
+
+# Development utilities (remove in production)
+watchfiles==0.21.0
