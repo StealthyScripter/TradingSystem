@@ -17,7 +17,8 @@ venv.bak/
 **/.env
 
 # Local environment variables
-*.env
+**.env
+**.env*
 **/.env
 
 # Local config and temp folders
@@ -90,3 +91,5 @@ frontend/build/
 *.bak
 
 *.sh
+
+DEPLOYMENT*
