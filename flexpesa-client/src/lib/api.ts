@@ -1,29 +1,23 @@
 import axios, { AxiosError } from 'axios';
 import { PortfolioData, Account, Asset, APIResponse, PerformancePortfolio, PortfolioSummary, HoldingCreate, PortfolioCreate, HoldingResponse, LoginRequest, RegisterRequest, User } from '@/types';
 
-// API Base URL configuration for different environments
 const getApiBaseUrl = (): string => {
-  // Priority 1: Explicit NEXT_PUBLIC_API_URL from environment
   if (process.env.NEXT_PUBLIC_API_URL) {
     console.log('🔗 Using API URL from NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
     return process.env.NEXT_PUBLIC_API_URL;
   }
 
-  // Priority 2: Build API URL from port environment variables
   const backendPort = process.env.NEXT_PUBLIC_BACKEND_PORT || '8000';
   const dockerBackendPort = process.env.NEXT_PUBLIC_DOCKER_BACKEND_PORT || '8080';
 
-  // Priority 3: Environment-specific defaults
   if (process.env.NODE_ENV === 'production') {
-    // Production should always have NEXT_PUBLIC_API_URL set
     console.warn('⚠️ Production environment without NEXT_PUBLIC_API_URL, using fallback');
     return 'https://api.yourdomain.com/api/v1';
   }
 
-  // Priority 4: Check if we're in a Docker environment
   const isDocker = process.env.DOCKER_ENV === 'true' ||
                    process.env.NEXT_PUBLIC_DOCKER_ENV === 'true' ||
-                   typeof window !== 'undefined' && window.location.port === '3001'; // Docker often shifts frontend port
+                   (typeof window !== 'undefined' && window.location.port === '3001');
 
   if (isDocker) {
     const dockerUrl = `http://localhost:${dockerBackendPort}/api/v1`;
@@ -31,7 +25,6 @@ const getApiBaseUrl = (): string => {
     return dockerUrl;
   }
 
-  // Priority 5: Default for local development (native backend)
   const nativeUrl = `http://localhost:${backendPort}/api/v1`;
   console.log('🔧 Native development environment, using:', nativeUrl);
   return nativeUrl;
@@ -48,17 +41,22 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  // Retry configuration
-  withCredentials:true,
-  validateStatus: (status) => status < 500, // Don't retry on client errors
+  withCredentials: true,
+  validateStatus: status => status < 500,
 });
 
-// Request interceptor for logging
+// 🌐 Request interceptor with CORS headers
 api.interceptors.request.use(
   (config) => {
     if (process.env.NODE_ENV === 'development') {
       console.log('🌐 API Request:', config.method?.toUpperCase(), config.url);
     }
+
+    config.headers?.set?.('Access-Control-Allow-Origin', '*');
+    config.headers?.set?.('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    config.headers?.set?.('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+
     return config;
   },
   (error) => {
@@ -67,7 +65,7 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor for logging and error handling
+// 🚨 Response interceptor with CORS and fallback handling
 api.interceptors.response.use(
   (response) => {
     if (process.env.NODE_ENV === 'development') {
@@ -75,9 +73,37 @@ api.interceptors.response.use(
     }
     return response;
   },
-  (error) => {
-    console.error('❌ API Response Error:', error.response?.status, error.config?.url, error.message);
-    return Promise.reject(error);
+  async (error) => {
+    const originalRequest = error.config;
+
+    console.error('❌ API Response Error:', {
+      status: error.response?.status,
+      code: error.code,
+      url: error.config?.url,
+      message: error.message,
+    });
+
+    // Handle CORS / Network error
+    if (
+      error.code === 'ERR_NETWORK' ||
+      error.message.includes('CORS')
+    ) {
+      console.warn('🚫 CORS or Network issue detected. Backend may be offline or misconfigured.');
+
+      if (!originalRequest._corsRetry && originalRequest.baseURL?.includes('localhost')) {
+        originalRequest._corsRetry = true;
+        const fallbackUrl = originalRequest.baseURL.replace('localhost', '127.0.0.1');
+        console.log('🔁 Retrying with fallback URL:', fallbackUrl);
+        originalRequest.baseURL = fallbackUrl;
+        return api(originalRequest);
+      }
+    }
+
+    // Friendly error wrapper
+    return Promise.reject({
+      ...error,
+      friendlyMessage: handleApiError(error),
+    });
   }
 );
 
@@ -88,10 +114,19 @@ interface ErrorResponse {
   error?: string;
 }
 
+function hasFriendlyMessage(error: unknown): error is { friendlyMessage: string } {
+  return typeof error === 'object' && error !== null && 'friendlyMessage' in error;
+}
+
+
 // Helper function to handle API errors with retry logic
 function handleApiError(error: unknown): string {
   if (axios.isAxiosError(error)) {
-    const axiosError = error as AxiosError<ErrorResponse>;
+    const axiosError = error as AxiosError<{ detail?: string; message?: string; error?: string }>;
+
+    if (hasFriendlyMessage(axiosError)) {
+      return axiosError.friendlyMessage;
+    }
 
     if (axiosError.code === 'ECONNREFUSED' || axiosError.code === 'ENOTFOUND') {
       return `Unable to connect to server at ${API_BASE_URL}. Please ensure the backend is running.`;
@@ -101,26 +136,19 @@ function handleApiError(error: unknown): string {
       return `Request timeout. The server at ${API_BASE_URL} is taking too long to respond.`;
     }
 
+    if (axiosError.code === 'ERR_NETWORK' || axiosError.message.includes('CORS')) {
+      return `CORS Error: Cannot connect to ${API_BASE_URL}. Please check backend or CORS setup.`;
+    }
+
     if (axiosError.response?.status === 502 || axiosError.response?.status === 503) {
-      return 'Server is temporarily unavailable. Please try again in a moment.';
+      return 'Server is temporarily unavailable. Please try again later.';
     }
 
-    if (axiosError.response?.data?.detail) {
-      return axiosError.response.data.detail;
-    }
-
-    if (axiosError.response?.data?.message) {
-      return axiosError.response.data.message;
-    }
-
-    return axiosError.message || 'Network error occurred';
+    const data = axiosError.response?.data;
+    return data?.detail || data?.message || data?.error || axiosError.message || 'Network error occurred';
   }
 
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return 'An unknown error occurred';
+  return error instanceof Error ? error.message : 'An unknown error occurred';
 }
 
 // Retry helper for failed requests
