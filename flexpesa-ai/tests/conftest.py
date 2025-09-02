@@ -57,10 +57,10 @@ def test_database_engine():
     yield engine
 
     # Cleanup
-    if not PRODUCTION_SAFE_MODE:
-        Base.metadata.drop_all(bind=engine)
-        if os.path.exists("test_portfolio.db"):
-            os.remove("test_portfolio.db")
+    Base.metadata.drop_all(bind=engine)
+    if not PRODUCTION_SAFE_MODE and os.path.exists("test_portfolio.db"):
+        os.remove("test_portfolio.db")
+    engine.dispose()
 
 @pytest.fixture(scope="function")
 def test_db_session(test_database_engine) -> Generator[Session, None, None]:
@@ -74,6 +74,7 @@ def test_db_session(test_database_engine) -> Generator[Session, None, None]:
     session = TestingSessionLocal()
 
     try:
+        transaction = session.begin()
         yield session
     finally:
         session.rollback()
