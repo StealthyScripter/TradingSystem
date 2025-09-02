@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine, event
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import QueuePool
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
@@ -173,4 +173,3 @@ def get_database_info():
         "connection_pool": DatabaseManager.get_pool_status() if settings.DATABASE_URL.startswith("postgresql://") else "N/A",
         "status": "connected" if check_database_connection() else "disconnected"
     }
-    
