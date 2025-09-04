@@ -5,13 +5,13 @@ pydantic==2.5.0
 pydantic-settings==2.1.0
 
 # Database - PostgreSQL ONLY (Production Ready)
-sqlalchemy==2.0.23
+sqlalchemy==1.4.49
 psycopg2-binary==2.9.9
 alembic==1.13.1
 
 # Authentication - Clerk JWT
 pyjwt[crypto]==2.8.0
-cryptography==41.0.8
+cryptography==41.0.7
 
 # HTTP requests and async
 requests==2.31.0
@@ -137,10 +137,10 @@ python-decouple==3.8
 jsonschema==4.20.0
 
 # HTTP status codes
-http-status==0.3.1
+# http-status==0.3.1
 
 # Async utilities
-anyio==4.1.0
+anyio==3.7.1
 
 # Development utilities (remove in production)
 watchfiles==0.21.0
