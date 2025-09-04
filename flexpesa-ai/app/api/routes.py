@@ -7,7 +7,12 @@ import pandas as pd
 from datetime import datetime
 
 from app.core.database import get_db
-from app.middleware.clerk_auth import get_current_user, get_current_user_optional, get_user_id
+# from app.middleware.clerk_auth import get_current_user, get_current_user_optional, get_user_id
+from app.middleware.conditional_auth import (
+    get_current_user,
+    get_current_user_optional,
+    get_user_id
+)
 from app.schemas.portfolio import Account, AccountCreate, Asset, AssetCreate, PortfolioAnalysis
 from app.models.portfolio import Account as AccountModel, Asset as AssetModel
 from app.services.portfolio_service import PortfolioService
@@ -131,15 +136,30 @@ async def get_user_profile(
 @router.get("/auth/config")
 async def get_auth_config():
     """Get authentication configuration for frontend"""
-    from app.core.config import get_clerk_config
+    from app.core.config import get_clerk_config, settings
 
-    config = get_clerk_config()
-    return {
-        "provider": "clerk",
-        "configured": config["configured"],
-        "publishable_key": config["publishable_key"],
-        "domain": config["domain"]
-    }
+    if settings.DISABLE_AUTH:
+        return {
+            "provider": "mock",
+            "configured": True,
+            "disabled": True,
+            "mock_user": {
+                "id": settings.MOCK_USER_ID,
+                "email": settings.MOCK_USER_EMAIL,
+                "first_name": settings.MOCK_USER_FIRST_NAME,
+                "last_name": settings.MOCK_USER_LAST_NAME
+            },
+            "message": "Authentication is DISABLED - using mock user"
+        }
+    else:
+        config = get_clerk_config()
+        return {
+            "provider": "clerk",
+            "configured": config["configured"],
+            "disabled": False,
+            "publishable_key": config["publishable_key"],
+            "domain": config["domain"]
+        }
 
 # ============ CORE PORTFOLIO ROUTES ============
 
@@ -254,7 +274,7 @@ def get_accounts(
         raise HTTPException(status_code=500, detail="Failed to get accounts")
 
 @router.post("/assets/", response_model=Asset)
-def add_asset(
+async def add_asset(
     asset: AssetCreate,
     request: Request,
     db: Session = Depends(get_db),
@@ -275,7 +295,7 @@ def add_asset(
             raise HTTPException(status_code=404, detail="Account not found")
 
         service = PortfolioService(db)
-        result = service.add_asset(asset)
+        result = await service.add_asset(asset)
 
         # Log business activity
         business_logger.log_user_action(
@@ -517,4 +537,3 @@ async def get_available_metrics():
             "value_at_risk": "Potential loss in worst-case scenarios"
         }
     }
-    

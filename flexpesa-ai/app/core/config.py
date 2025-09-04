@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
+    DISABLE_RATE_LIMITING: bool = False
 
     # Server Configuration
     BACKEND_PORT: int = 8000
@@ -19,6 +20,13 @@ class Settings(BaseSettings):
 
     # Security
     SECRET_KEY: str = "your-secret-key-change-in-production-abc123def456ghi789jkl"
+
+    # Development/Testing - ADD THIS SECTION
+    DISABLE_AUTH: bool = False
+    MOCK_USER_ID: str = "dev_user_12345"
+    MOCK_USER_EMAIL: str = "dev@example.com"
+    MOCK_USER_FIRST_NAME: str = "Dev"
+    MOCK_USER_LAST_NAME: str = "User"
 
     @field_validator('SECRET_KEY')
     @classmethod
@@ -246,4 +254,3 @@ if settings.ENVIRONMENT == "production":
         import logging
         logging.error(f"Production configuration validation failed: {e}")
         # Don't raise in production startup, but log the error
-        
