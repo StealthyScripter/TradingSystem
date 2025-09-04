@@ -74,8 +74,14 @@ app.add_middleware(RateLimitMiddleware)
 # Custom Logging Middleware
 app.add_middleware(LoggingMiddleware)
 
-# Clerk Authentication Middleware
-app.add_middleware(ClerkAuthMiddleware)
+# Clerk Authentication Middleware - CONDITIONAL
+if not settings.DISABLE_AUTH:
+    app.add_middleware(ClerkAuthMiddleware)
+    logger.info("🔒 Clerk authentication ENABLED")
+else:
+    logger.warning("⚠️  Authentication DISABLED - using mock user")
+    logger.warning(f"   Mock User ID: {settings.MOCK_USER_ID}")
+    logger.warning(f"   Mock Email: {settings.MOCK_USER_EMAIL}")
 
 # CORS Middleware - Enhanced configuration
 app.add_middleware(
@@ -232,4 +238,3 @@ if __name__ == "__main__":
         reload=settings.DEBUG,
         log_level=settings.LOG_LEVEL.lower()
     )
-    
