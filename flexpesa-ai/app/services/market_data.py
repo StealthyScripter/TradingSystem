@@ -35,15 +35,14 @@ class MarketDataService:
 
     def get_current_prices(self, symbols: List[str]) -> Dict[str, float]:
         """Get real current prices with rate limiting and fallbacks"""
-        service = MarketDataService()
 
         if not symbols:
             return {}
 
         # Check cooldown
-        if service._is_in_cooldown():
+        if self._is_in_cooldown():
             print(f"⏳ In rate limit cooldown - using mock data")
-            return service._get_mock_prices(symbols)
+            return self._get_mock_prices(symbols)
 
         prices = {}
         print(f"📈 Fetching REAL prices for {len(symbols)} symbols with rate limiting...")
@@ -52,10 +51,10 @@ class MarketDataService:
             try:
                 # Rate limit all requests except the first
                 if i > 0:
-                    service._enforce_rate_limit()
+                    self._enforce_rate_limit()
 
                 print(f"   Getting {symbol}...")
-                price = service._get_single_price_safe(symbol)
+                price = self._get_single_price_safe(symbol)
 
                 if price > 0:
                     prices[symbol] = price
@@ -67,11 +66,11 @@ class MarketDataService:
             except Exception as e:
                 if "429" in str(e) or "Too Many Requests" in str(e):
                     print(f"   🚫 Rate limited at {symbol}! Switching to mock data")
-                    service.last_rate_limit_time = time.time()
+                    self.last_rate_limit_time = time.time()
 
                     # Fill remaining symbols with mock data
                     remaining_symbols = symbols[i:]
-                    mock_prices = service._get_mock_prices(remaining_symbols)
+                    mock_prices = self._get_mock_prices(remaining_symbols)
                     prices.update(mock_prices)
                     break
                 else:
