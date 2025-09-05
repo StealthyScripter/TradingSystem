@@ -14,7 +14,7 @@ class PortfolioService:
 
     def __init__(self, db: Session):
         self.db = db
-        self.market_data = MarketDataService()
+        self.market_data = MarketDataService(db)
         # Initialize lightweight AI with API keys from settings
         self.ai_service = LightweightAIService(
             news_api_key=settings.NEWS_API_KEY
