@@ -1,642 +1,258 @@
-# Investment Portfolio API - Test Suite
+# Investment Portfolio API - Basic Tests
 
-A comprehensive test suite for the Investment Portfolio API that can run safely in both development and production environments to detect regressions, validate calculations, and ensure system health.
+Simple test suite covering core functionality of the Investment Portfolio API.
 
-## 📋 Table of Contents
+## 📋 Overview
 
-- [Overview](#overview)
-- [Quick Start](#quick-start)
-- [Test Categories](#test-categories)
-- [Running Tests](#running-tests)
-- [Production Testing](#production-testing)
-- [Test Configuration](#test-configuration)
-- [Coverage Reports](#coverage-reports)
-- [Continuous Integration](#continuous-integration)
-- [Writing Tests](#writing-tests)
-- [Troubleshooting](#troubleshooting)
+This test suite focuses on basic functionality:
 
-## 🔍 Overview
-
-This test suite includes:
-
-- **1000+ tests** covering all API endpoints, services, and calculations
-- **Production-safe tests** that can run without modifying data
-- **Financial calculation validation** with known mathematical results
-- **Performance benchmarks** to detect regressions
-- **Integration tests** for complete workflows
-- **Health checks** for system monitoring
-- **Mock services** for reliable testing without external dependencies
-
-### Key Features
-
-✅ **Production Safe** - Tests can run in production without data modification
-✅ **Comprehensive Coverage** - Tests API, database, services, and calculations
-✅ **Performance Monitoring** - Detects performance regressions
-✅ **Financial Accuracy** - Validates all portfolio calculations
-✅ **CI/CD Ready** - Integrates with GitHub Actions, Jenkins, etc.
-✅ **Detailed Reporting** - HTML reports with coverage metrics
+- **Database operations** - Account and asset CRUD operations
+- **API endpoints** - Core endpoints for portfolio management
+- **Calculations** - Financial calculations and portfolio math
+- **Services** - Basic portfolio service functionality
 
 ## 🚀 Quick Start
 
-### 1. Install Dependencies
+### 1. Install Test Dependencies
 
 ```bash
 cd flexpesa-ai
 
 # Install test dependencies
-pip install -r requirements-test.txt
-
-# Or install specific test packages
-pip install pytest pytest-asyncio pytest-cov requests-mock
+pip install -r tests/requirements-test.txt
 ```
 
-### 2. Run Basic Tests
+### 2. Run All Tests
 
 ```bash
-# Run all tests
+# Run all basic tests
 pytest
 
-# Run with coverage
-pytest --cov=app --cov-report=html
+# Run with verbose output
+pytest -v
 
-# Run specific test categories
-pytest -m "unit"           # Unit tests only
-pytest -m "integration"    # Integration tests
-pytest -m "production"     # Production-safe tests
+# Run specific test file
+pytest tests/test_database.py
+pytest tests/test_api.py
+pytest tests/test_calculations.py
+pytest tests/test_services.py
 ```
 
-### 3. View Results
+### 3. Run Tests with Coverage
 
 ```bash
-# View coverage report
-open htmlcov/index.html
+# Run with coverage report
+pytest --cov=app
 
-# View test results
-cat pytest-report.html
+# Generate HTML coverage report
+pytest --cov=app --cov-report=html
+open htmlcov/index.html
 ```
 
 ## 📁 Test Structure
 
 ```
-flexpesa-ai/tests/
-├── conftest.py                 # Test configuration and fixtures
-├── test_api.py                # API endpoint tests
-├── test_database.py           # Database operations tests
-├── test_calculations.py       # Financial calculations tests
-├── test_portfolio_service.py  # Portfolio service tests
-├── test_market_data.py        # Market data service tests
-├── test_production_health.py  # Production health checks
-├── test_integration.py        # End-to-end integration tests
-├── pytest.ini                # Pytest configuration
-├── requirements-test.txt      # Test dependencies
-└── README.md                  # This file
+tests/
+├── conftest.py              # Test configuration and fixtures
+├── test_database.py         # Database operations tests
+├── test_api.py              # API endpoint tests
+├── test_calculations.py     # Financial calculations tests
+├── test_services.py         # Portfolio service tests
+├── pytest.ini              # Pytest configuration
+├── requirements-test.txt    # Test dependencies
+└── README.md               # This file
 ```
 
-## 🏷️ Test Categories
+## 🧪 Test Categories
 
-Tests are organized into categories using pytest markers:
+### Database Tests (`test_database.py`)
+- Account creation and management
+- Asset creation and management
+- Relationship testing (accounts ↔ assets)
+- Basic CRUD operations
+- Data integrity validation
 
-### Unit Tests (`-m unit`)
-Fast, isolated tests for individual functions and classes:
-```bash
-pytest -m unit
-```
+### API Tests (`test_api.py`)
+- Health check endpoints
+- Account management endpoints
+- Asset management endpoints
+- Portfolio summary endpoints
+- Basic error handling
+- Simple workflow integration
 
-### Integration Tests (`-m integration`)
-Test interactions between components:
-```bash
-pytest -m integration
-```
+### Calculation Tests (`test_calculations.py`)
+- Asset value calculations (market value, cost basis, P&L)
+- Account total value calculations
+- Portfolio-level calculations
+- Percentage calculations
+- Edge cases (zero values, negative values, etc.)
 
-### Production Tests (`-m production`)
-Safe to run in production for health monitoring:
-```bash
-pytest -m production
-```
+### Service Tests (`test_services.py`)
+- Portfolio service basic operations
+- Account creation through service
+- Asset addition through service
+- Portfolio summary generation
+- Service error handling
+- Multi-user data isolation
 
-### Database Tests (`-m database`)
-Tests requiring database access:
-```bash
-pytest -m database
-```
-
-### API Tests (`-m api`)
-Tests for REST API endpoints:
-```bash
-pytest -m api
-```
-
-### Calculation Tests (`-m calculations`)
-Tests for financial calculations and formulas:
-```bash
-pytest -m calculations
-```
-
-### Performance Tests (`-m performance`)
-Performance benchmarks and load tests:
-```bash
-pytest -m performance
-```
-
-## 🏃‍♂️ Running Tests
-
-### Development Environment
-
-```bash
-# Run all tests with verbose output
-pytest -v
-
-# Run tests in parallel
-pytest -n auto
-
-# Run with live logging
-pytest -s --log-cli-level=INFO
-
-# Run specific test file
-pytest tests/test_api.py
-
-# Run specific test
-pytest tests/test_api.py::TestPortfolioEndpoints::test_portfolio_summary
-```
-
-### Test Selection Examples
-
-```bash
-# Run fast tests only
-pytest -m "unit and not slow"
-
-# Run API tests excluding auth
-pytest -m "api and not auth"
-
-# Run database tests for PostgreSQL only
-pytest -m "database" -k "postgresql"
-
-# Run performance tests with benchmarking
-pytest -m "performance" --benchmark-only
-```
+## ⚙️ Configuration
 
 ### Environment Variables
 
-```bash
-# Set test environment
-export TESTING=true
-export ENVIRONMENT=development
-export DATABASE_URL=sqlite:///./test_portfolio.db
-
-# Production safe mode
-export PRODUCTION_SAFE_MODE=true
-
-# Run tests
-pytest
-```
-
-## 🏭 Production Testing
-
-### Safe Production Tests
-
-The test suite includes production-safe tests that:
-- ✅ Only read data, never modify
-- ✅ Test system health and performance
-- ✅ Validate calculations with existing data
-- ✅ Check for regressions
-- ❌ Never create, update, or delete data
+Tests automatically set these environment variables:
 
 ```bash
-# Run only production-safe tests
-pytest -m production
-
-# Run with production database
-export DATABASE_URL=postgresql://user:pass@prod-host:5432/portfolio_db
-export PRODUCTION_SAFE_MODE=true
-pytest -m production
-
-# Health check tests only
-pytest tests/test_production_health.py::TestProductionHealth
-```
-
-### Production Health Checks
-
-```bash
-# Database connectivity and performance
-pytest tests/test_production_health.py::TestProductionHealth::test_database_connectivity
-
-# API endpoint availability
-pytest tests/test_production_health.py::TestProductionHealth::test_api_endpoint_availability
-
-# Data integrity validation
-pytest tests/test_production_health.py::TestProductionDataIntegrity
-
-# Performance regression detection
-pytest tests/test_production_health.py::TestProductionPerformance
-```
-
-### Regression Detection
-
-```bash
-# Run regression detection tests
-pytest tests/test_production_health.py::TestProductionRegressionDetection
-
-# Check for performance regressions
-pytest -m "production and performance"
-
-# Validate financial calculations
-pytest -m "production and calculations"
-```
-
-## ⚙️ Test Configuration
-
-### Pytest Configuration (`pytest.ini`)
-
-Key settings:
-- Test discovery patterns
-- Custom markers
-- Coverage settings
-- Logging configuration
-- Timeout settings
-
-### Environment Configuration
-
-Create `.env.test` file:
-```env
 TESTING=true
 ENVIRONMENT=development
 DEBUG=true
-DATABASE_URL=sqlite:///./test_portfolio.db
-SECRET_KEY=test-secret-key
-PRODUCTION_SAFE_MODE=false
+DISABLE_AUTH=true
+DATABASE_URL=sqlite:///:memory:
 ```
 
-### Database Configuration
+### Test Database
 
-Tests use isolated test databases:
-- **SQLite** for unit tests (fast, isolated)
-- **PostgreSQL** for integration tests (production-like)
-- **Mock data** for external API tests
+Tests use an in-memory SQLite database that is:
+- ✅ Fast and isolated
+- ✅ Automatically cleaned up after each test
+- ✅ No external dependencies
+- ✅ Consistent across test runs
 
-## 📊 Coverage Reports
+## 🔧 Running Specific Tests
 
-### Generate Coverage Report
-
+### Run by Test File
 ```bash
-# Run tests with coverage
-pytest --cov=app --cov-report=html --cov-report=term-missing
-
-# View HTML report
-open htmlcov/index.html
-
-# Generate XML report (for CI)
-pytest --cov=app --cov-report=xml
+pytest tests/test_database.py::TestDatabaseBasics::test_create_account
+pytest tests/test_api.py::TestAccountEndpoints
+pytest tests/test_calculations.py::TestAssetCalculations
 ```
 
-### Coverage Targets
+### Run by Pattern
+```bash
+# Run all account-related tests
+pytest -k "account"
 
-- **Unit Tests**: 90%+ coverage
-- **Integration Tests**: 80%+ coverage
-- **Critical Paths**: 100% coverage (calculations, API endpoints)
+# Run all calculation tests
+pytest -k "calculation"
 
-### Coverage Exclusions
-
-```python
-# pragma: no cover - for test-only code
-# pragma: no cover - for error handling that can't be easily tested
+# Run all API tests
+pytest -k "api"
 ```
 
-## 🔄 Continuous Integration
+### Run with Different Verbosity
+```bash
+# Minimal output
+pytest -q
 
-### GitHub Actions Example
+# Normal output
+pytest
 
-```yaml
-name: Tests
-on: [push, pull_request]
+# Verbose output
+pytest -v
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: postgres
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-
-    - name: Install dependencies
-      run: |
-        pip install -r requirements.txt
-        pip install -r requirements-test.txt
-
-    - name: Run tests
-      run: |
-        pytest --cov=app --cov-report=xml -v
-
-    - name: Upload coverage
-      uses: codecov/codecov-action@v3
+# Very verbose output
+pytest -vv
 ```
 
-### Jenkins Pipeline Example
-
-```groovy
-pipeline {
-    agent any
-    stages {
-        stage('Test') {
-            steps {
-                sh 'pip install -r requirements-test.txt'
-                sh 'pytest --cov=app --cov-report=xml --junit-xml=junit.xml'
-            }
-            post {
-                always {
-                    junit 'junit.xml'
-                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: true,
-                               keepAll: true, reportDir: 'htmlcov', reportFiles: 'index.html',
-                               reportName: 'Coverage Report'])
-                }
-            }
-        }
-    }
-}
-```
-
-## ✍️ Writing Tests
-
-### Test Naming Convention
-
-```python
-# Good test names
-def test_create_account_with_valid_data():
-def test_calculate_portfolio_return_positive_gain():
-def test_api_returns_401_when_unauthenticated():
-
-# Test class naming
-class TestPortfolioCalculations:
-class TestAPIEndpoints:
-class TestDatabaseOperations:
-```
-
-### Test Structure
-
-```python
-def test_example():
-    # Arrange - Set up test data
-    user_id = "test_user"
-    account_data = {"name": "Test Account", "type": "brokerage"}
-
-    # Act - Execute the code being tested
-    result = portfolio_service.create_account(account_data, user_id)
-
-    # Assert - Verify the results
-    assert result.name == "Test Account"
-    assert result.clerk_user_id == user_id
-```
-
-### Using Fixtures
-
-```python
-def test_with_portfolio_data(sample_portfolio_data):
-    """Test using the sample_portfolio_data fixture"""
-    account = sample_portfolio_data["account"]
-    assets = sample_portfolio_data["assets"]
-
-    assert len(assets) == 3
-    assert account.name == "Test Portfolio"
-```
-
-### Mocking External Services
-
-```python
-def test_with_mock_market_data(mock_market_data_service):
-    """Test using mock market data service"""
-    mock_market_data_service.get_current_prices.return_value = {
-        "AAPL": 150.0
-    }
-
-    # Test code that uses market data service
-```
-
-### Production-Safe Tests
-
-```python
-@pytest.mark.production
-def test_production_safe_calculation():
-    """This test only reads data, never modifies"""
-    # Only use existing data
-    # Only perform read operations
-    # Only validate calculations
-    pass
-```
-
-### Async Tests
-
-```python
-@pytest.mark.asyncio
-async def test_async_operation():
-    """Test async operations"""
-    result = await async_service.get_data()
-    assert result is not None
-```
-
-## 🛠️ Troubleshooting
+## 🐛 Troubleshooting
 
 ### Common Issues
 
-#### Tests Fail with Database Errors
-
-```bash
-# Check database connection
-pytest tests/test_database.py::TestDatabaseConnection::test_database_connection
-
-# Reset test database
-rm test_portfolio.db
-pytest tests/test_database.py::TestDatabaseConnection::test_create_tables
-```
-
 #### Import Errors
-
 ```bash
-# Check if all dependencies are installed
-pip install -r requirements-test.txt
+# Make sure you're in the correct directory
+cd flexpesa-ai
+
+# Install dependencies
+pip install -r requirements.txt
+pip install -r tests/requirements-test.txt
 
 # Check Python path
 export PYTHONPATH="${PYTHONPATH}:$(pwd)"
 ```
 
-#### Slow Test Performance
-
+#### Database Issues
 ```bash
-# Run tests in parallel
-pip install pytest-xdist
-pytest -n auto
-
-# Profile slow tests
-pytest --durations=10
+# Tests use in-memory database, but if you see database errors:
+rm -f test_portfolio.db
+pytest tests/test_database.py
 ```
 
-#### Mock Issues
-
+#### Test Failures
 ```bash
-# Clear mock state between tests
-pytest --tb=short -v
+# Run with more detail
+pytest -vv --tb=long
 
-# Debug mock calls
-pytest -s --log-cli-level=DEBUG
+# Run one test at a time to isolate issues
+pytest tests/test_database.py::TestDatabaseBasics::test_create_account -v
 ```
 
-### Test Database Issues
-
+#### Async Test Issues
 ```bash
-# PostgreSQL connection issues
-export DATABASE_URL=postgresql://portfolio_user:portfolio_password@localhost:5432/test_portfolio_db
+# Make sure pytest-asyncio is installed
+pip install pytest-asyncio
 
-# SQLite permission issues
-chmod 664 test_portfolio.db
+# Check pytest.ini has asyncio_mode = auto
 ```
 
-### Coverage Issues
+## 📊 Test Coverage
 
+### View Coverage Report
 ```bash
-# Generate detailed coverage report
-pytest --cov=app --cov-report=html --cov-report=term-missing
+# Generate coverage report
+pytest --cov=app --cov-report=term-missing
 
-# Exclude test files from coverage
-pytest --cov=app --cov-config=.coveragerc
+# Generate HTML report
+pytest --cov=app --cov-report=html
 ```
 
-## 📈 Performance Benchmarking
+### Expected Coverage
+- **Database Models**: 90%+
+- **API Endpoints**: 80%+
+- **Calculations**: 95%+
+- **Services**: 85%+
 
-### Benchmark Tests
+## 🔄 Continuous Integration
 
-```bash
-# Run performance benchmarks
-pytest -m performance --benchmark-only
+These tests are designed to run in CI environments:
 
-# Compare benchmarks
-pytest --benchmark-compare
-
-# Save benchmark results
-pytest --benchmark-save=baseline
+```yaml
+# Example GitHub Actions
+- name: Run Basic Tests
+  run: |
+    pip install -r requirements.txt
+    pip install -r tests/requirements-test.txt
+    pytest --cov=app
 ```
 
-### Memory Testing
+## 🚀 Next Steps
 
-```bash
-# Test for memory leaks
-pytest -m "performance" --memprof
+After basic tests are working:
 
-# Monitor memory usage
-pytest tests/test_integration.py::TestLongRunningIntegration::test_memory_leak_detection
-```
+1. **Add more test cases** for edge cases
+2. **Add integration tests** for complete workflows
+3. **Add performance tests** for response times
+4. **Add mock market data** tests
+5. **Add production health checks**
 
-## 🔍 Debugging Tests
+## 💡 Tips
 
-### Debug Mode
-
-```bash
-# Run with debugger
-pytest --pdb
-
-# Run with verbose output
-pytest -vvv -s
-
-# Run with logging
-pytest --log-cli-level=DEBUG
-```
-
-### Test Isolation
-
-```bash
-# Run single test
-pytest tests/test_api.py::TestPortfolioEndpoints::test_portfolio_summary -v
-
-# Run with fresh database
-pytest --create-db
-```
-
-## 📊 Test Metrics
-
-### Key Metrics to Monitor
-
-- **Test Coverage**: Aim for 85%+ overall
-- **Test Execution Time**: < 5 minutes for full suite
-- **Failure Rate**: < 1% for production tests
-- **Performance Benchmarks**: Within 10% of baseline
-
-### Reporting
-
-```bash
-# Generate comprehensive report
-pytest --html=report.html --self-contained-html
-
-# JSON report for automation
-pytest --json-report --json-report-file=report.json
-
-# JUnit XML for CI integration
-pytest --junit-xml=junit.xml
-```
-
-## 🚀 Best Practices
-
-### Test Organization
-
-1. **Group related tests** in classes
-2. **Use descriptive test names** that explain what's being tested
-3. **Keep tests isolated** - no dependencies between tests
-4. **Mock external services** for reliable testing
-5. **Test edge cases** and error conditions
-
-### Performance
-
-1. **Use fixtures** for common test data
-2. **Run tests in parallel** when possible
-3. **Mock expensive operations** (API calls, file I/O)
-4. **Use appropriate test marks** to control execution
-
-### Maintenance
-
-1. **Keep tests updated** with code changes
-2. **Remove obsolete tests** when features are removed
-3. **Refactor test code** to reduce duplication
-4. **Document complex test scenarios**
-
-## 📞 Support
-
-### Getting Help
-
-- **Check test output** for specific error messages
-- **Review test logs** in `pytest.log`
-- **Check database connectivity** with health tests
-- **Verify environment variables** are set correctly
-
-### Contributing
-
-1. **Add tests** for new features
-2. **Update tests** when changing existing functionality
-3. **Follow naming conventions** for consistency
-4. **Add appropriate test markers**
-5. **Update documentation** when needed
+- **Run tests frequently** during development
+- **Write tests first** for new features (TDD)
+- **Keep tests simple** and focused on one thing
+- **Use descriptive test names** that explain what's being tested
+- **Mock external dependencies** to make tests reliable
+- **Test edge cases** like empty data, invalid input, etc.
 
 ---
 
-## 🎯 Summary
+## 🆘 Getting Help
 
-This comprehensive test suite provides:
+If tests are failing:
 
-- ✅ **Confidence** in code quality and correctness
-- ✅ **Protection** against regressions
-- ✅ **Documentation** of expected behavior
-- ✅ **Performance** monitoring and benchmarks
-- ✅ **Production** health monitoring
+1. Check the **error message** carefully
+2. Run **individual tests** to isolate the problem
+3. Check **prerequisites** (dependencies, environment)
+4. Look at **test logs** for more details
+5. Verify **database connectivity** and **API server** status
 
-**Run tests frequently**, especially before deploying to production, to ensure system reliability and catch issues early.
-
-For questions or issues with the test suite, check the troubleshooting section or review individual test files for specific testing scenarios.
+For more complex testing scenarios, refer to the full test documentation.
