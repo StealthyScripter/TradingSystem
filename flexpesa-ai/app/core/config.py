@@ -59,7 +59,16 @@ class Settings(BaseSettings):
 
     @field_validator('DATABASE_URL')
     @classmethod
-    def validate_database_url(cls, v):
+    def validate_database_url(cls, v, info):
+        import os
+        
+        # Allow SQLite for testing environment
+        if os.getenv('TESTING') == 'true' or info.data.get('ENVIRONMENT') == 'testing':
+            # Allow both PostgreSQL and SQLite in development/testing
+            if v.startswith(("postgresql://", "sqlite:///")):
+                return v
+            raise ValueError("DATABASE_URL must use PostgreSQL (postgresql://) or SQLite (sqlite:///) format")
+
         if not v.startswith("postgresql://"):
             raise ValueError("DATABASE_URL must use PostgreSQL format: postgresql://...")
         return v
