@@ -1,13 +1,32 @@
 """
-Basic test configuration and fixtures
-Simple setup for testing core functionality
+Test configuration
+Handles import path and database validation issues
 """
 
 import pytest
 import os
-import tempfile
-from typing import Generator
-from sqlalchemy import create_engine
+import sys
+from pathlib import Path
+
+# Add project root to Python path FIRST
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
+# Set test environment BEFORE importing app (this is critical)
+os.environ.update({
+    "TESTING": "true",
+    "ENVIRONMENT": "testing",
+    "DEBUG": "true",
+    "DISABLE_AUTH": "true",
+    "DATABASE_URL": "sqlite:///:memory:",
+    "MOCK_USER_ID": "test_user_123",
+    "MOCK_USER_EMAIL": "test@example.com",
+    "MOCK_USER_FIRST_NAME": "Test",
+    "MOCK_USER_LAST_NAME": "User"
+})
+
+# Import after path and environment are set
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import StaticPool
 from fastapi.testclient import TestClient
@@ -17,20 +36,22 @@ from app.main import app
 from app.core.database import get_db, Base
 from app.models.portfolio import Account, Asset
 
-# Test configuration
-TEST_DATABASE_URL = "sqlite:///./test_portfolio.db"
-
 @pytest.fixture(scope="function")
 def test_db():
-    """Create test database"""
-    # Use in-memory SQLite for tests
+    """Create clean test database for each test"""
     engine = create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
 
-    # Create tables
+    @event.listens_for(engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
+    # Create all tables
     Base.metadata.create_all(bind=engine)
 
     # Create session
@@ -41,6 +62,8 @@ def test_db():
         yield session
     finally:
         session.close()
+        # Clean up
+        Base.metadata.drop_all(bind=engine)
 
 @pytest.fixture(scope="function")
 def test_client(test_db):
@@ -52,10 +75,11 @@ def test_client(test_db):
             pass
 
     app.dependency_overrides[get_db] = override_get_db
-    client = TestClient(app)
 
-    yield client
+    with TestClient(app) as client:
+        yield client
 
+    # Clean up overrides
     app.dependency_overrides.clear()
 
 @pytest.fixture
@@ -101,18 +125,3 @@ def sample_asset(test_db, sample_account):
     test_db.commit()
     test_db.refresh(asset)
     return asset
-
-# Helper functions
-def assert_account_valid(account_data):
-    """Assert account data is valid"""
-    required_fields = ["id", "name", "account_type"]
-    for field in required_fields:
-        assert field in account_data
-        assert account_data[field] is not None
-
-def assert_asset_valid(asset_data):
-    """Assert asset data is valid"""
-    required_fields = ["id", "symbol", "shares", "avg_cost", "account_id"]
-    for field in required_fields:
-        assert field in asset_data
-        assert asset_data[field] is not None
