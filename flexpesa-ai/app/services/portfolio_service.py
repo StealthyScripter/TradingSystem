@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from typing import List, Dict, Optional
 import logging
 from datetime import datetime
-
+from pydantic import ValidationError
 from app.models.portfolio import Account, Asset, MarketData, PortfolioSnapshot
 from app.schemas.portfolio import AccountCreate, AssetCreate
 from app.services.market_data import MarketDataService
@@ -55,18 +55,6 @@ class PortfolioService:
             if not account:
                 raise ValueError("Account not found or inactive")
 
-            # Symbol validation
-            validated_symbol = self._validate_and_normalize_symbol(asset.symbol)
-
-            # Business rule validation
-            self._validate_business_rules(asset, account)
-
-            # Market data validation
-            await self._validate_market_data(validated_symbol)
-
-            # Position limits validation
-            self._validate_position_limits(asset, account)
-
             # Check for existing asset in the same account
             existing_asset = self.db.query(Asset).filter(
                 Asset.account_id == asset.account_id,
@@ -94,11 +82,11 @@ class PortfolioService:
                 # Create new asset
                 db_asset = Asset(
                     account_id=asset.account_id,
-                    symbol=validated_symbol,
+                    symbol=asset.symbol.upper(),
                     shares=asset.shares,
                     avg_cost=asset.avg_cost,
                     current_price=asset.avg_cost,  # Initialize with purchase price
-                    asset_type=self._determine_asset_type(validated_symbol),
+                    asset_type=self._determine_asset_type(asset.symbol),
                     currency=getattr(asset, 'currency', 'USD')
                 )
 
@@ -108,18 +96,20 @@ class PortfolioService:
 
                # Try to update market data separately (non-critical)
                 try:
-                    await self._update_market_data_safely(validated_symbol, asset.avg_cost)
+                    await self._update_market_data(asset.symbol, asset.avg_cost)
 
                     # Optionally update asset with fresh market data
-                    fresh_data = self.db.query(MarketData).filter(MarketData.symbol == validated_symbol).first()
+                    fresh_data = self.db.query(MarketData).filter(MarketData.symbol == asset.symbol).first()
                     if fresh_data:
                         db_asset.current_price = fresh_data.current_price
                         self.db.commit()
                 except Exception as e:
-                    logging.warning(f"Market data update failed for {validated_symbol}: {e}")
+                    logging.warning(f"Market data update failed for {asset.symbol}: {e}")
 
                 logging.info(f"Added new asset {asset.symbol} to account {asset.account_id}")
                 return db_asset
+        except ValidationError as e:
+            logging.error(f"Asset validation failed: {e}")
 
         except Exception as e:
             self.db.rollback()
@@ -426,7 +416,7 @@ class PortfolioService:
                     Account.is_active == True
                 ).all()
 
-                total_value = sum(account.total_value for account in accounts)
+                total_value = sum(account.balance for account in accounts)
                 total_assets = sum(len(account.assets) for account in accounts)
 
                 data = {
@@ -464,6 +454,7 @@ class PortfolioService:
                     snapshot_type="daily"
                 )
                 self.db.add(snapshot)
+                self.db.commit()
 
         except Exception as e:
             logging.warning(f"Failed to create portfolio snapshot: {e}")

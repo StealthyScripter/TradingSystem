@@ -5,6 +5,7 @@ import asyncio
 import logging
 import pandas as pd
 from datetime import datetime
+from pydantic import ValidationError
 
 from app.core.database import get_db
 # from app.middleware.clerk_auth import get_current_user, get_current_user_optional, get_user_id
