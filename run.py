@@ -130,7 +130,9 @@ class PortfolioRunner:
 
         # Initialize database
         self.log("Initializing database with sample data...")
-        subprocess.run([str(python_venv), "scripts/init_data.py"], check=True)
+        init_script = self.backend_dir / "scripts" / "init_data.py"
+        subprocess.run([str(python_venv), str(init_script)], check=True)
+
 
         self.log("✅ Backend setup complete")
         return python_venv
