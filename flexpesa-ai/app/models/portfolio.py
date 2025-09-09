@@ -40,7 +40,8 @@ class Account(Base):
     @property
     def total_value(self):
         """Calculate total account value from assets"""
-        return sum((asset.shares * (asset.current_price or asset.avg_cost)) for asset in self.assets)
+        return sum(
+            (asset.shares * (asset.current_price or asset.avg_cost)) for asset in self.assets if asset.is_active)
 
     def to_dict(self):
         """Convert to dictionary for JSON serialization"""
@@ -270,4 +271,3 @@ class MarketData(Base):
             "asset_type": self.asset_type,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None
         }
-        

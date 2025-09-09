@@ -55,6 +55,18 @@ class PortfolioService:
             if not account:
                 raise ValueError("Account not found or inactive")
 
+            # Symbol validation
+            validated_symbol = self._validate_and_normalize_symbol(asset.symbol)
+
+            # Business rule validation
+            self._validate_business_rules(asset, account)
+
+            # Market data validation
+            await self._validate_market_data(validated_symbol)
+
+            # Position limits validation
+            self._validate_position_limits(asset, account)
+
             # Check for existing asset in the same account
             existing_asset = self.db.query(Asset).filter(
                 Asset.account_id == asset.account_id,
@@ -82,30 +94,29 @@ class PortfolioService:
                 # Create new asset
                 db_asset = Asset(
                     account_id=asset.account_id,
-                    symbol=asset.symbol.upper(),
+                    symbol=validated_symbol,
                     shares=asset.shares,
                     avg_cost=asset.avg_cost,
                     current_price=asset.avg_cost,  # Initialize with purchase price
-                    asset_type=self._determine_asset_type(asset.symbol),
+                    asset_type=self._determine_asset_type(validated_symbol),
                     currency=getattr(asset, 'currency', 'USD')
                 )
-
-                # Try to get current market data
-                try:
-                    market_data = await self._get_or_fetch_market_data(asset.symbol.upper())
-                    if market_data:
-                        db_asset.current_price = market_data.current_price
-                        db_asset.name = market_data.name
-                        db_asset.sector = market_data.sector
-                        db_asset.industry = market_data.industry
-                        db_asset.exchange = market_data.exchange
-                        db_asset.price_updated_at = datetime.utcnow()
-                except Exception as e:
-                    logging.warning(f"Failed to fetch market data for {asset.symbol}: {e}")
 
                 self.db.add(db_asset)
                 self.db.commit()
                 self.db.refresh(db_asset)
+
+               # Try to update market data separately (non-critical)
+                try:
+                    await self._update_market_data_safely(validated_symbol, asset.avg_cost)
+
+                    # Optionally update asset with fresh market data
+                    fresh_data = self.db.query(MarketData).filter(MarketData.symbol == validated_symbol).first()
+                    if fresh_data:
+                        db_asset.current_price = fresh_data.current_price
+                        self.db.commit()
+                except Exception as e:
+                    logging.warning(f"Market data update failed for {validated_symbol}: {e}")
 
                 logging.info(f"Added new asset {asset.symbol} to account {asset.account_id}")
                 return db_asset
@@ -114,6 +125,76 @@ class PortfolioService:
             self.db.rollback()
             logging.error(f"Failed to add asset: {e}")
             raise
+
+    def _validate_and_normalize_symbol(self, symbol: str) -> str:
+        """Validate and normalize symbol"""
+        symbol = symbol.strip().upper()
+
+        # Check symbol format
+        if len(symbol) > 10:
+            raise ValueError("Symbol too long (max 10 characters)")
+
+        # Check for valid characters (letters, numbers, hyphens)
+        if not all(c.isalnum() or c in ['-', '.'] for c in symbol):
+            raise ValueError("Symbol contains invalid characters")
+
+        # Check against known invalid patterns
+        invalid_patterns = ['', 'NULL', 'UNDEFINED', 'TEST']
+        if symbol in invalid_patterns:
+            raise ValueError(f"Invalid symbol: {symbol}")
+
+        return symbol
+
+    def _validate_business_rules(self, asset: AssetCreate, account: Account):
+        """Validate business rules"""
+        # Check account type restrictions
+        if account.account_type == "retirement" and asset.symbol.endswith("-USD"):
+            raise ValueError("Cryptocurrency not allowed in retirement accounts")
+
+        # Check position size limits
+        max_position_value = asset.shares * asset.avg_cost
+        if max_position_value > 1000000:  # $1M limit per position
+            raise ValueError("Position size exceeds maximum allowed")
+
+        # Check for duplicate active positions
+        existing = self.db.query(Asset).filter(
+            Asset.account_id == asset.account_id,
+            Asset.symbol == asset.symbol,
+            Asset.is_active == True
+        ).first()
+
+        # Note: This is handled by combining positions, but could be restricted
+
+    async def _validate_market_data(self, symbol: str):
+        """Validate symbol exists in market data"""
+        try:
+            # Attempt to fetch market data for validation
+            market_data = await self._get_or_fetch_market_data(symbol)
+
+            # If we can't get any market data, warn but don't fail
+            if not market_data:
+                logging.warning(f"No market data available for symbol: {symbol}")
+                # Could choose to raise error here if strict validation needed
+
+        except Exception as e:
+            logging.warning(f"Market data validation failed for {symbol}: {e}")
+            # Decide whether to fail or continue
+
+    def _validate_position_limits(self, asset: AssetCreate, account: Account):
+        """Validate position and account limits"""
+        # Calculate new total account value
+        current_value = account.total_value
+        new_position_value = asset.shares * asset.avg_cost
+        projected_value = current_value + new_position_value
+
+        # Account value limits (example: $10M max per account)
+        if projected_value > 10000000:
+            raise ValueError("Adding this position would exceed account value limit")
+
+        # Asset count limits (example: max 100 different assets per account)
+        current_asset_count = len([a for a in account.assets if a.is_active])
+        if current_asset_count >= 100:
+            raise ValueError("Account has reached maximum number of assets (100)")
 
     async def update_prices(self, clerk_user_id: str = None) -> Dict:
         """Update current prices for user's assets or all assets"""
@@ -475,3 +556,25 @@ class PortfolioService:
                 "error": "Analysis temporarily unavailable",
                 "fallback_recommendation": "HOLD"
             }
+
+    def _validate_symbol_format(self, symbol: str) -> str:
+        """Simple symbol validation and normalization"""
+        if not symbol or not symbol.strip():
+            raise ValueError("Symbol cannot be empty")
+
+        symbol = symbol.strip().upper()
+
+        # Basic length check
+        if len(symbol) > 10:
+            raise ValueError("Symbol too long (maximum 10 characters)")
+
+        return symbol
+
+    def _validate_asset_data(self, asset_data):
+        """Basic asset data validation"""
+        # Additional validation beyond Pydantic
+        if asset_data.shares > 1000000:  # Reasonable upper limit
+            raise ValueError("Share quantity exceeds reasonable limit (1,000,000)")
+
+        if asset_data.avg_cost > 100000:  # $100k per share limit
+            raise ValueError("Average cost exceeds reasonable limit ($100,000)")
