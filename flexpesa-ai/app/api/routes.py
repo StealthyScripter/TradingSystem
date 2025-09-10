@@ -541,3 +541,143 @@ async def get_available_metrics():
             "value_at_risk": "Potential loss in worst-case scenarios"
         }
     }
+
+@router.post("/portfolios/", response_model=PerformancePortfolioResponse)
+async def create_portfolio_with_performance(
+    portfolio_data: PortfolioCreateExtended,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user)
+):
+    """Create new portfolio with initial holdings and performance tracking"""
+    try:
+        user_id = user.get("sub")
+
+        # Create account for portfolio
+        account_data = AccountCreate(
+            name=portfolio_data.name,
+            account_type=portfolio_data.type.lower()
+        )
+
+        service = PortfolioService(db)
+        account = service.create_account(account_data, clerk_user_id=user_id)
+
+        # Add holdings as assets
+        for holding in portfolio_data.holdings:
+            asset_data = AssetCreate(
+                account_id=account.id,
+                symbol=holding.symbol,
+                shares=holding.quantity,
+                avg_cost=holding.purchase_price
+            )
+            await service.add_asset(asset_data)
+
+        # Calculate performance metrics
+        performance_service = PerformanceService(db)
+        performance = await performance_service._calculate_account_performance_from_db(account)
+
+        return performance
+
+    except Exception as e:
+        logger.error(f"Error creating portfolio: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create portfolio")
+
+@router.post("/portfolios/{portfolio_id}/recalculate")
+async def recalculate_portfolio_performance(
+    portfolio_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user)
+):
+    """Recalculate performance metrics for a specific portfolio"""
+    try:
+        user_id = user.get("sub")
+        performance_service = PerformanceService(db)
+
+        result = await performance_service.get_portfolio_performance(
+            portfolio_id, clerk_user_id=user_id
+        )
+
+        return {
+            "message": "Performance recalculated successfully",
+            "result": result
+        }
+
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error recalculating performance: {e}")
+        raise HTTPException(status_code=500, detail="Failed to recalculate performance")
+
+@router.delete("/portfolios/{portfolio_id}/performance")
+async def delete_portfolio(
+    portfolio_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user)
+):
+    """Delete a portfolio (set account to inactive)"""
+    try:
+        user_id = user.get("sub")
+
+        # Find and deactivate account
+        account = db.query(Account).filter(
+            Account.id == int(portfolio_id),
+            Account.clerk_user_id == user_id
+        ).first()
+
+        if not account:
+            raise HTTPException(status_code=404, detail="Portfolio not found")
+
+        account.is_active = False
+        db.commit()
+
+        return {"message": "Portfolio deleted successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting portfolio: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete portfolio")
+
+@router.get("/portfolios/{portfolio_id}/holdings")
+async def get_portfolio_holdings(
+    portfolio_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user)
+):
+    """Get holdings for a specific portfolio"""
+    try:
+        user_id = user.get("sub")
+
+        account = db.query(Account).filter(
+            Account.id == int(portfolio_id),
+            Account.clerk_user_id == user_id,
+            Account.is_active == True
+        ).first()
+
+        if not account:
+            raise HTTPException(status_code=404, detail="Portfolio not found")
+
+        holdings = []
+        for asset in account.assets:
+            if asset.is_active:
+                holdings.append({
+                    "symbol": asset.symbol,
+                    "quantity": asset.shares,
+                    "purchase_price": asset.avg_cost,
+                    "current_price": asset.current_price,
+                    "purchase_date": asset.created_at.date().isoformat(),
+                    "market_value": asset.shares * asset.current_price,
+                    "gain_loss": (asset.current_price - asset.avg_cost) * asset.shares,
+                    "gain_loss_percentage": ((asset.current_price - asset.avg_cost) / asset.avg_cost) * 100 if asset.avg_cost > 0 else 0
+                })
+
+        return holdings
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting portfolio holdings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get portfolio holdings")
