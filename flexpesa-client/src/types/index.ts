@@ -139,6 +139,7 @@ export interface PortfolioPerformanceSummary {
   average_sharpe_ratio: number;
 }
 
+// Alias for backward compatibility
 export type PortfolioSummaryStats = PortfolioPerformanceSummary;
 
 export interface HoldingCreate {
