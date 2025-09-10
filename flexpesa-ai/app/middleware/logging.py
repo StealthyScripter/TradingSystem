@@ -102,10 +102,15 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             logger.info(f"[{request_id}] {method} {request.url.path} - {client_ip} - {user_agent[:50]}")
 
     async def _log_response(self, request: Request, response: Response,
-                          request_id: str, process_time: float):
+                        request_id: str, process_time: float):
         """Log response details"""
 
-        status_code = response.status_code
+        # Fix: Handle None status_code properly
+        status_code = getattr(response, 'status_code', None)
+        if status_code is None:
+            # For OPTIONS responses that don't have status_code set
+            status_code = 200  # Default to 200 for successful responses
+            logger.debug(f"[{request_id}] Response status_code was None, defaulting to 200")
 
         # Determine log level based on status code
         if status_code >= 500:
