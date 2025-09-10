@@ -19,6 +19,20 @@ import {
   AssetCreateRequest
 } from '@/types';
 
+interface APIResponse<T> {
+  success: boolean;
+  data: T;
+  error?: string;
+}
+
+function createSuccessResponse<T>(data: T): APIResponse<T> {
+  return { success: true, data };
+}
+
+function createErrorResponse<T>(error: string): APIResponse<T> {
+  return { success: false, data: {} as T, error };
+}
+
 // ============ API CONFIGURATION ============
 
 const getApiBaseUrl = (): string => {
@@ -404,31 +418,31 @@ export const portfolioAPI = {
 
   // ============ PORTFOLIO PERFORMANCE ============
 
-  async getAllPortfolioPerformance(): Promise<PerformancePortfolio[]> {
+  async getAllPortfolioPerformance(): Promise<APIResponse<PerformancePortfolio[]>> {
     try {
       const response = await retryRequest(
         () => api.get<PerformancePortfolio[]>('/portfolios/performance'),
         3,
         1000
       );
-      return response.data;
+      return createSuccessResponse(response.data);
     } catch (error: unknown) {
       console.error('Error fetching portfolio performance:', error);
-      throw new Error(handleApiError(error));
+      return createErrorResponse(handleApiError(error));
     }
   },
 
-  async getPortfolioPerformanceSummary(): Promise<PortfolioSummaryStats> {
+  async getPortfolioPerformanceSummary(): Promise<APIResponse<PortfolioSummaryStats>> {
     try {
       const response = await retryRequest(
         () => api.get<PortfolioSummaryStats>('/portfolios/performance/summary'),
         3,
         1000
       );
-      return response.data;
+      return createSuccessResponse(response.data);
     } catch (error: unknown) {
       console.error('Error fetching portfolio performance summary:', error);
-      throw new Error(handleApiError(error));
+      return createErrorResponse(handleApiError(error));
     }
   },
 
@@ -446,17 +460,17 @@ export const portfolioAPI = {
     }
   },
 
-  async createPortfolioWithPerformance(portfolioData: PortfolioCreate): Promise<PerformancePortfolio> {
+  async createPortfolioWithPerformance(portfolioData: PortfolioCreate): Promise<APIResponse<PerformancePortfolio>> {
     try {
       const response = await retryRequest(
         () => api.post<PerformancePortfolio>('/portfolios/', portfolioData),
         2,
         1000
       );
-      return response.data;
+      return createSuccessResponse(response.data);
     } catch (error: unknown) {
       console.error('Error creating portfolio:', error);
-      throw new Error(handleApiError(error));
+      return createErrorResponse(handleApiError(error));
     }
   },
 
@@ -474,16 +488,17 @@ export const portfolioAPI = {
     }
   },
 
-  async deletePortfolio(portfolioId: string): Promise<void> {
+  async deletePortfolio(portfolioId: string): Promise<APIResponse<void>> {
     try {
       await retryRequest(
         () => api.delete(`/portfolios/${portfolioId}/performance`),
         2,
         1000
       );
+      return createSuccessResponse(undefined as void);
     } catch (error: unknown) {
       console.error('Error deleting portfolio:', error);
-      throw new Error(handleApiError(error));
+      return createErrorResponse(handleApiError(error));
     }
   },
 
@@ -531,17 +546,17 @@ export const portfolioAPI = {
     }
   },
 
-  async recalculatePerformance(portfolioId: string): Promise<PerformancePortfolio> {
+  async recalculatePerformance(portfolioId: string): Promise<APIResponse<PerformancePortfolio>> {
     try {
       const response = await retryRequest(
         () => api.post<{ message: string; result: PerformancePortfolio }>(`/portfolios/${portfolioId}/recalculate`),
         2,
         2000
       );
-      return response.data.result;
+      return createSuccessResponse(response.data.result);
     } catch (error: unknown) {
       console.error('Error recalculating performance:', error);
-      throw new Error(handleApiError(error));
+      return createErrorResponse(handleApiError(error));
     }
   },
 
