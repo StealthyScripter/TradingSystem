@@ -1,28 +1,14 @@
 'use client';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { portfolioAPI } from '@/lib/api';
-
-interface User {
-  id: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  is_active: boolean;
-}
+import { User, RegisterRequest } from '@/types';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (userData: RegisterData) => Promise<boolean>;
+  register: (userData: RegisterRequest) => Promise<boolean>;
   logout: () => void;
-}
-
-interface RegisterData {
-  email: string;
-  password: string;
-  first_name: string;
-  last_name: string;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -33,12 +19,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      const result = await portfolioAPI.getCurrentUser();
-      if (result.success) {
-        setUser(result.data);
-      }
+      const user = await portfolioAPI.getCurrentUser();
+      setUser(user);
     } catch (error) {
       console.log('Not authenticated');
+      // Don't set error state for auth check failures
     } finally {
       setIsLoading(false);
     }
@@ -46,26 +31,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const result = await portfolioAPI.login({ email, password });
-      if (result.success) {
-        setUser(result.data.user);
-        return true;
-      }
-      return false;
+      const response = await portfolioAPI.login({ email, password });
+      setUser(response.user);
+      return true;
     } catch (error) {
+      console.error('Login failed:', error);
       return false;
     }
   };
 
-  const register = async (userData: RegisterData): Promise<boolean> => {
+  const register = async (userData: RegisterRequest): Promise<boolean> => {
     try {
-      const result = await portfolioAPI.register(userData);
-      if (result.success) {
-        // Auto-login after registration
-        return await login(userData.email, userData.password);
-      }
-      return false;
+      const newUser = await portfolioAPI.register(userData);
+      // Auto-login after registration
+      return await login(userData.email, userData.password);
     } catch (error) {
+      console.error('Registration failed:', error);
       return false;
     }
   };
@@ -73,6 +54,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       await portfolioAPI.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Continue with logout even if API call fails
     } finally {
       setUser(null);
     }

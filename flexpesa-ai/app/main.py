@@ -83,10 +83,64 @@ else:
     logger.warning(f"   Mock User ID: {settings.MOCK_USER_ID}")
     logger.warning(f"   Mock Email: {settings.MOCK_USER_EMAIL}")
 
-# CORS Middleware - Enhanced configuration
+# # CORS Middleware - Enhanced configuration
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=settings.get_allowed_origins(),
+#     allow_credentials=True,
+#     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+#     allow_headers=[
+#         "Accept",
+#         "Accept-Language",
+#         "Content-Language",
+#         "Content-Type",
+#         "Authorization",
+#         "X-Requested-With",
+#         "X-CSRF-Token",
+#         "X-Custom-Header",
+#         "Access-Control-Allow-Credentials",
+#         "Access-Control-Allow-Origin"
+#     ],
+#     expose_headers=["X-Total-Count", "X-Rate-Limit-Remaining"],
+#     max_age=86400,  # 24 hours
+# )
+# Replace your CORS middleware section in main.py with this:
+
+# CORS Middleware - Enhanced configuration with debugging
+try:
+    allowed_origins = settings.get_allowed_origins()
+    logger.info(f"🌐 CORS allowed origins from settings: {allowed_origins}")
+except Exception as e:
+    logger.error(f"❌ Error getting allowed origins from settings: {e}")
+    # Fallback to hardcoded origins for development
+    allowed_origins = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+        "https://yourdomain.com"  # Add your production domain
+    ]
+    logger.warning(f"⚠️  Using fallback CORS origins: {allowed_origins}")
+
+# Ensure frontend origins are always included in development
+if settings.ENVIRONMENT == "development":
+    dev_origins = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001"
+    ]
+
+    # Add dev origins if not already present
+    for origin in dev_origins:
+        if origin not in allowed_origins:
+            allowed_origins.append(origin)
+
+    logger.info(f"🔧 Development mode - final CORS origins: {allowed_origins}")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.get_allowed_origins(),
+    allow_origins=allowed_origins,  # Use our processed origins
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=[
@@ -99,11 +153,33 @@ app.add_middleware(
         "X-CSRF-Token",
         "X-Custom-Header",
         "Access-Control-Allow-Credentials",
-        "Access-Control-Allow-Origin"
+        "Access-Control-Allow-Origin",
+        "Origin"  # Add this
     ],
     expose_headers=["X-Total-Count", "X-Rate-Limit-Remaining"],
     max_age=86400,  # 24 hours
 )
+
+# Add a debug endpoint to check CORS configuration
+@app.get("/debug/cors")
+def debug_cors():
+    """Debug endpoint to check CORS configuration"""
+    if settings.ENVIRONMENT == "production":
+        raise HTTPException(status_code=404, detail="Not found")
+
+    try:
+        settings_origins = settings.get_allowed_origins()
+    except Exception as e:
+        settings_origins = f"Error: {e}"
+
+    return {
+        "cors_debug": {
+            "settings_origins": settings_origins,
+            "actual_origins": allowed_origins,
+            "environment": settings.ENVIRONMENT,
+            "debug_mode": settings.DEBUG
+        }
+    }
 
 # Global Exception Handler
 @app.exception_handler(HTTPException)

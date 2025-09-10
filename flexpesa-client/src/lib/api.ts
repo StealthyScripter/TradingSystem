@@ -1,7 +1,37 @@
 import axios, { AxiosError } from 'axios';
-import { PortfolioData, Account, Asset, APIResponse, PerformancePortfolio, PortfolioSummary, HoldingCreate, PortfolioCreate, HoldingResponse, LoginRequest, RegisterRequest, User } from '@/types';
+import {
+  Account,
+  Asset,
+  PortfolioSummary,
+  PerformancePortfolio,
+  PortfolioSummaryStats,
+  HoldingCreate,
+  HoldingResponse,
+  PortfolioCreate,
+  LoginRequest,
+  RegisterRequest,
+  User,
+  UserProfile,
+  AuthConfig,
+  MarketStatus,
+  AssetAnalysis,
+  AccountCreateRequest,
+  AssetCreateRequest
+} from '@/types';
+
+// ============ API CONFIGURATION ============
 
 const getApiBaseUrl = (): string => {
+  // Check for CORS bypass mode
+  const useCorsProxy = process.env.NEXT_PUBLIC_USE_CORS_PROXY === 'true';
+
+  if (useCorsProxy) {
+    // Use Next.js proxy to bypass CORS during development
+    const proxyUrl = '/api/backend';
+    console.log('🔧 Using CORS proxy:', proxyUrl);
+    return proxyUrl;
+  }
+
   if (process.env.NEXT_PUBLIC_API_URL) {
     console.log('🔗 Using API URL from NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
     return process.env.NEXT_PUBLIC_API_URL;
@@ -30,9 +60,7 @@ const getApiBaseUrl = (): string => {
   return nativeUrl;
 };
 
-//Get the API base URl
 const API_BASE_URL = getApiBaseUrl();
-
 console.log('🔗 API Base URL:', API_BASE_URL);
 
 const api = axios.create({
@@ -45,17 +73,18 @@ const api = axios.create({
   validateStatus: status => status < 500,
 });
 
-// 🌐 Request interceptor with CORS headers
+// ============ REQUEST/RESPONSE INTERCEPTORS ============
+
 api.interceptors.request.use(
   (config) => {
     if (process.env.NODE_ENV === 'development') {
       console.log('🌐 API Request:', config.method?.toUpperCase(), config.url);
     }
 
+    // Add CORS headers for development
     config.headers?.set?.('Access-Control-Allow-Origin', '*');
     config.headers?.set?.('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     config.headers?.set?.('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
 
     return config;
   },
@@ -65,7 +94,6 @@ api.interceptors.request.use(
   }
 );
 
-// 🚨 Response interceptor with CORS and fallback handling
 api.interceptors.response.use(
   (response) => {
     if (process.env.NODE_ENV === 'development') {
@@ -84,10 +112,7 @@ api.interceptors.response.use(
     });
 
     // Handle CORS / Network error
-    if (
-      error.code === 'ERR_NETWORK' ||
-      error.message.includes('CORS')
-    ) {
+    if (error.code === 'ERR_NETWORK' || error.message.includes('CORS')) {
       console.warn('🚫 CORS or Network issue detected. Backend may be offline or misconfigured.');
 
       if (!originalRequest._corsRetry && originalRequest.baseURL?.includes('localhost')) {
@@ -99,7 +124,6 @@ api.interceptors.response.use(
       }
     }
 
-    // Friendly error wrapper
     return Promise.reject({
       ...error,
       friendlyMessage: handleApiError(error),
@@ -107,7 +131,8 @@ api.interceptors.response.use(
   }
 );
 
-// Define error response type
+// ============ ERROR HANDLING ============
+
 interface ErrorResponse {
   detail?: string;
   message?: string;
@@ -118,11 +143,9 @@ function hasFriendlyMessage(error: unknown): error is { friendlyMessage: string 
   return typeof error === 'object' && error !== null && 'friendlyMessage' in error;
 }
 
-
-// Helper function to handle API errors with retry logic
 function handleApiError(error: unknown): string {
   if (axios.isAxiosError(error)) {
-    const axiosError = error as AxiosError<{ detail?: string; message?: string; error?: string }>;
+    const axiosError = error as AxiosError<ErrorResponse>;
 
     if (hasFriendlyMessage(axiosError)) {
       return axiosError.friendlyMessage;
@@ -151,7 +174,8 @@ function handleApiError(error: unknown): string {
   return error instanceof Error ? error.message : 'An unknown error occurred';
 }
 
-// Retry helper for failed requests
+// ============ RETRY HELPER ============
+
 async function retryRequest<T>(
   requestFn: () => Promise<T>,
   maxRetries: number = 3,
@@ -179,7 +203,8 @@ async function retryRequest<T>(
   throw new Error('Max retries exceeded');
 }
 
-// Export API configuration for debugging
+// ============ API CONFIGURATION INFO ============
+
 export const apiConfig = {
   baseURL: API_BASE_URL,
   timeout: api.defaults.timeout,
@@ -187,456 +212,391 @@ export const apiConfig = {
   isDocker: process.env.DOCKER_ENV === 'true',
 };
 
+// ============ MAIN API OBJECT ============
+
 export const portfolioAPI = {
-  async getPortfolioSummary(): Promise<APIResponse<PortfolioData>> {
+  // ============ AUTHENTICATION ============
+
+  async getAuthConfig(): Promise<AuthConfig> {
+    try {
+      const response = await api.get<AuthConfig>('/auth/config');
+      return response.data;
+    } catch (error: unknown) {
+      console.error('Error getting auth config:', error);
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  async getUserProfile(): Promise<UserProfile> {
     try {
       const response = await retryRequest(
-        () => api.get<PortfolioData>('/portfolio/summary'),
+        () => api.get<UserProfile>('/auth/profile'),
         3,
         1000
       );
-
-      return {
-        success: true,
-        data: response.data
-      };
+      return response.data;
     } catch (error: unknown) {
-      console.error('Error fetching portfolio summary:', error);
-      return {
-        success: false,
-        error: handleApiError(error)
-      };
+      console.error('Error getting user profile:', error);
+      throw new Error(handleApiError(error));
     }
   },
 
-  async getAccounts(): Promise<APIResponse<Account[]>> {
-    try {
-      const response = await retryRequest(
-        () => api.get<Account[]>('/accounts/'),
-        3,
-        1000
-      );
-
-      return {
-        success: true,
-        data: response.data
-      };
-    } catch (error: unknown) {
-      console.error('Error fetching accounts:', error);
-      return {
-        success: false,
-        error: handleApiError(error)
-      };
-    }
-  },
-
-  async createAccount(accountData: Partial<Account>): Promise<APIResponse<Account>> {
-    try {
-      const response = await retryRequest(
-        () => api.post<Account>('/accounts/', accountData),
-        2,
-        1000
-      );
-
-      return {
-        success: true,
-        data: response.data
-      };
-    } catch (error: unknown) {
-      console.error('Error creating account:', error);
-      return {
-        success: false,
-        error: handleApiError(error)
-      };
-    }
-  },
-
-  async addAsset(assetData: Partial<Asset>): Promise<APIResponse<Asset>> {
-    try {
-      const response = await retryRequest(
-        () => api.post<Asset>('/assets/', assetData),
-        2,
-        1000
-      );
-
-      return {
-        success: true,
-        data: response.data
-      };
-    } catch (error: unknown) {
-      console.error('Error adding asset:', error);
-      return {
-        success: false,
-        error: handleApiError(error)
-      };
-    }
-  },
-
-  async getQuickAnalysis(symbols: string[]): Promise<APIResponse<{ analysis: Record<string, unknown> }>> {
-    try {
-      const response = await retryRequest(
-        () => api.post<{ analysis: Record<string, unknown> }>('/analysis/quick', symbols),
-        2,
-        2000
-      );
-
-      return {
-        success: true,
-        data: response.data
-      };
-    } catch (error: unknown) {
-      console.error('Error getting analysis:', error);
-      return {
-        success: false,
-        error: handleApiError(error)
-      };
-    }
-  },
-
-  async getAllPortfolioPerformance(): Promise<APIResponse<PerformancePortfolio[]>> {
-    try {
-      const response = await retryRequest(
-        () => api.get<PerformancePortfolio[]>('/portfolios/performance'),
-        3,
-        1000
-      );
-
-      return {
-        success: true,
-        data: response.data
-      };
-    } catch (error: unknown) {
-      console.error('Error fetching portfolio performance:', error);
-      return {
-        success: false,
-        error: handleApiError(error)
-      };
-    }
-  },
-
-  // Get portfolio performance summary
-  async getPortfolioPerformanceSummary(): Promise<APIResponse<PortfolioSummary>> {
-    try {
-      const response = await retryRequest(
-        () => api.get<PortfolioSummary>('/portfolios/performance/summary'),
-        3,
-        1000
-      );
-
-      return {
-        success: true,
-        data: response.data
-      };
-    } catch (error: unknown) {
-      console.error('Error fetching portfolio performance summary:', error);
-      return {
-        success: false,
-        error: handleApiError(error)
-      };
-    }
-  },
-
-  // Get specific portfolio performance
-  async getPortfolioPerformance(portfolioId: string): Promise<APIResponse<PerformancePortfolio>> {
-    try {
-      const response = await retryRequest(
-        () => api.get<PerformancePortfolio>(`/portfolios/${portfolioId}/performance`),
-        3,
-        1000
-      );
-
-      return {
-        success: true,
-        data: response.data
-      };
-    } catch (error: unknown) {
-      console.error('Error fetching single portfolio performance:', error);
-      return {
-        success: false,
-        error: handleApiError(error)
-      };
-    }
-  },
-
-  // Create new portfolio with performance tracking
-  async createPortfolioWithPerformance(portfolioData: PortfolioCreate): Promise<APIResponse<PerformancePortfolio>> {
-    try {
-      const response = await retryRequest(
-        () => api.post<PerformancePortfolio>('/portfolios/', portfolioData),
-        2,
-        1000
-      );
-
-      return {
-        success: true,
-        data: response.data
-      };
-    } catch (error: unknown) {
-      console.error('Error creating portfolio:', error);
-      return {
-        success: false,
-        error: handleApiError(error)
-      };
-    }
-  },
-
-  // Update portfolio
-  async updatePortfolio(portfolioId: string, updateData: { name?: string; type?: string; expense_ratio?: number }): Promise<APIResponse<PerformancePortfolio>> {
-    try {
-      const response = await retryRequest(
-        () => api.put<PerformancePortfolio>(`/portfolios/${portfolioId}/performance`, updateData),
-        2,
-        1000
-      );
-
-      return {
-        success: true,
-        data: response.data
-      };
-    } catch (error: unknown) {
-      console.error('Error updating portfolio:', error);
-      return {
-        success: false,
-        error: handleApiError(error)
-      };
-    }
-  },
-
-  // Delete portfolio
-  async deletePortfolio(portfolioId: string): Promise<APIResponse<void>> {
-    try {
-      await retryRequest(
-        () => api.delete(`/portfolios/${portfolioId}/performance`),
-        2,
-        1000
-      );
-
-      return {
-        success: true,
-        data: undefined
-      };
-    } catch (error: unknown) {
-      console.error('Error deleting portfolio:', error);
-      return {
-        success: false,
-        error: handleApiError(error)
-      };
-    }
-  },
-
-  // Get portfolio holdings with performance
-  async getPortfolioHoldings(portfolioId: string): Promise<APIResponse<HoldingResponse[]>> {
-    try {
-      const response = await retryRequest(
-        () => api.get<HoldingResponse[]>(`/portfolios/${portfolioId}/holdings`),
-        3,
-        1000
-      );
-
-      return {
-        success: true,
-        data: response.data
-      };
-    } catch (error: unknown) {
-      console.error('Error fetching portfolio holdings:', error);
-      return {
-        success: false,
-        error: handleApiError(error)
-      };
-    }
-  },
-
-  // Add holdings to portfolio
-  async addHoldingsToPortfolio(portfolioId: string, holdings: HoldingCreate[]): Promise<APIResponse<{ message: string }>> {
-    try {
-      const response = await retryRequest(
-        () => api.post<{ message: string }>(`/portfolios/${portfolioId}/holdings`, holdings),
-        2,
-        1000
-      );
-
-      return {
-        success: true,
-        data: response.data
-      };
-    } catch (error: unknown) {
-      console.error('Error adding holdings:', error);
-      return {
-        success: false,
-        error: handleApiError(error)
-      };
-    }
-  },
-
-  // Update daily price data
-  async updateDailyData(portfolioId: string, priceData: { date: string; holdings_prices: Record<string, number> }): Promise<APIResponse<{ message: string; result: unknown }>> {
-    try {
-      const response = await retryRequest(
-        () => api.post<{ message: string; result: unknown }>(`/portfolios/${portfolioId}/daily-data`, priceData),
-        2,
-        1000
-      );
-
-      return {
-        success: true,
-        data: response.data
-      };
-    } catch (error: unknown) {
-      console.error('Error updating daily data:', error);
-      return {
-        success: false,
-        error: handleApiError(error)
-      };
-    }
-  },
-
-  // Recalculate portfolio performance
-  async recalculatePerformance(portfolioId: string): Promise<APIResponse<PerformancePortfolio>> {
-    try {
-      const response = await retryRequest(
-        () => api.post<{ message: string; result: PerformancePortfolio }>(`/portfolios/${portfolioId}/recalculate`),
-        2,
-        2000
-      );
-
-      return {
-        success: true,
-        data: response.data.result
-      };
-    } catch (error: unknown) {
-      console.error('Error recalculating performance:', error);
-      return {
-        success: false,
-        error: handleApiError(error)
-      };
-    }
-  },
-
-  // Get available benchmarks
-  async getAvailableBenchmarks(): Promise<APIResponse<{ benchmarks: Array<{ name: string; symbol: string; description: string }> }>> {
-    try {
-      const response = await retryRequest(
-        () => api.get<{ benchmarks: Array<{ name: string; symbol: string; description: string }> }>('/portfolios/performance/benchmarks'),
-        3,
-        1000
-      );
-
-      return {
-        success: true,
-        data: response.data
-      };
-    } catch (error: unknown) {
-      console.error('Error fetching benchmarks:', error);
-      return {
-        success: false,
-        error: handleApiError(error)
-      };
-    }
-  },
-
-  // Get available metrics
-  async getAvailableMetrics(): Promise<APIResponse<{ metrics: Record<string, string> }>> {
-    try {
-      const response = await retryRequest(
-        () => api.get<{ metrics: Record<string, string> }>('/portfolios/performance/metrics'),
-        3,
-        1000
-      );
-
-      return {
-        success: true,
-        data: response.data
-      };
-    } catch (error: unknown) {
-      console.error('Error fetching metrics:', error);
-      return {
-        success: false,
-        error: handleApiError(error)
-      };
-    }
-  },
-
-  async login(credentials: LoginRequest): Promise<APIResponse<{ user: User }>> {
+  async login(credentials: LoginRequest): Promise<{ user: User }> {
     try {
       const formData = new FormData();
       formData.append('username', credentials.email);
       formData.append('password', credentials.password);
 
       const response = await api.post<{ user: User }>('/auth/cookie/login', formData);
-      return { success: true, data: response.data };
+      return response.data;
     } catch (error) {
-      return { success: false, error: handleApiError(error) };
+      throw new Error(handleApiError(error));
     }
   },
 
-  async register(userData: RegisterRequest): Promise<APIResponse<User>> {
+  async register(userData: RegisterRequest): Promise<User> {
     try {
       const response = await api.post<User>('/auth/register', userData);
-      return { success: true, data: response.data };
+      return response.data;
     } catch (error) {
-      return { success: false, error: handleApiError(error) };
+      throw new Error(handleApiError(error));
     }
   },
 
-  async logout(): Promise<APIResponse<void>> {
+  async logout(): Promise<void> {
     try {
       await api.post('/auth/cookie/logout');
-      return { success: true, data: undefined };
     } catch (error) {
-      return { success: false, error: handleApiError(error) };
+      throw new Error(handleApiError(error));
     }
   },
 
-  async getCurrentUser(): Promise<APIResponse<User>> {
+  async getCurrentUser(): Promise<User> {
     try {
       const response = await api.get<User>('/users/me');
-      return { success: true, data: response.data };
+      return response.data;
     } catch (error) {
-      return { success: false, error: handleApiError(error) };
+      throw new Error(handleApiError(error));
     }
   },
 
-  // Health check endpoint with API config info
-  async healthCheck(): Promise<APIResponse<{ status: string; config: typeof apiConfig }>> {
-    try {
-      const response = await api.get<{ status: string }>('/');
-      return {
-        success: true,
-        data: {
-          ...response.data,
-          config: apiConfig
-        }
-      };
-    } catch (error: unknown) {
-      return {
-        success: false,
-        error: handleApiError(error)
-      };
-    }
-  },
+  // ============ CORE PORTFOLIO ============
 
-  // ... rest of your existing API methods remain the same ...
-  async updatePrices(): Promise<APIResponse<{ updated_assets: number; total_assets: number }>> {
+  async getPortfolioSummary(): Promise<PortfolioSummary> {
     try {
       const response = await retryRequest(
-        () => api.post<{ updated_assets: number; total_assets: number }>('/portfolio/update-prices'),
+        () => api.get<PortfolioSummary>('/portfolio/summary'),
+        3,
+        1000
+      );
+      return response.data;
+    } catch (error: unknown) {
+      console.error('Error fetching portfolio summary:', error);
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  async updatePrices(): Promise<{ updated_assets: number; total_assets: number; duration: number; timestamp: string }> {
+    try {
+      const response = await retryRequest(
+        () => api.post<{ updated_assets: number; total_assets: number; duration: number; timestamp: string }>('/portfolio/update-prices'),
         2,
         2000
       );
-
-      return {
-        success: true,
-        data: response.data
-      };
+      return response.data;
     } catch (error: unknown) {
       console.error('Error updating prices:', error);
-      return {
-        success: false,
-        error: handleApiError(error)
-      };
+      throw new Error(handleApiError(error));
     }
   },
 
+  // ============ ACCOUNTS ============
+
+  async getAccounts(): Promise<Account[]> {
+    try {
+      const response = await retryRequest(
+        () => api.get<Account[]>('/accounts/'),
+        3,
+        1000
+      );
+      return response.data;
+    } catch (error: unknown) {
+      console.error('Error fetching accounts:', error);
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  async createAccount(accountData: AccountCreateRequest): Promise<Account> {
+    try {
+      const response = await retryRequest(
+        () => api.post<Account>('/accounts/', accountData),
+        2,
+        1000
+      );
+      return response.data;
+    } catch (error: unknown) {
+      console.error('Error creating account:', error);
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  // ============ ASSETS ============
+
+  async addAsset(assetData: AssetCreateRequest): Promise<Asset> {
+    try {
+      const response = await retryRequest(
+        () => api.post<Asset>('/assets/', assetData),
+        2,
+        1000
+      );
+      return response.data;
+    } catch (error: unknown) {
+      console.error('Error adding asset:', error);
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  // ============ MARKET DATA ============
+
+  async getMarketStatus(): Promise<MarketStatus> {
+    try {
+      const response = await api.get<MarketStatus>('/market/status');
+      return response.data;
+    } catch (error: unknown) {
+      console.error('Error getting market status:', error);
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  // ============ AI ANALYSIS ============
+
+  async getQuickAnalysis(symbols: string[]): Promise<{ analysis: Record<string, unknown> }> {
+    try {
+      if (symbols.length > 20) {
+        throw new Error('Maximum 20 symbols allowed for quick analysis');
+      }
+
+      const response = await retryRequest(
+        () => api.post<{ analysis: Record<string, unknown> }>('/analysis/quick', symbols),
+        2,
+        2000
+      );
+      return response.data;
+    } catch (error: unknown) {
+      console.error('Error getting analysis:', error);
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  async getAssetAnalysis(symbol: string): Promise<AssetAnalysis> {
+    try {
+      const response = await retryRequest(
+        () => api.post<AssetAnalysis>(`/analysis/asset/${symbol}`),
+        2,
+        2000
+      );
+      return response.data;
+    } catch (error: unknown) {
+      console.error('Error getting asset analysis:', error);
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  // ============ PORTFOLIO PERFORMANCE ============
+
+  async getAllPortfolioPerformance(): Promise<PerformancePortfolio[]> {
+    try {
+      const response = await retryRequest(
+        () => api.get<PerformancePortfolio[]>('/portfolios/performance'),
+        3,
+        1000
+      );
+      return response.data;
+    } catch (error: unknown) {
+      console.error('Error fetching portfolio performance:', error);
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  async getPortfolioPerformanceSummary(): Promise<PortfolioSummaryStats> {
+    try {
+      const response = await retryRequest(
+        () => api.get<PortfolioSummaryStats>('/portfolios/performance/summary'),
+        3,
+        1000
+      );
+      return response.data;
+    } catch (error: unknown) {
+      console.error('Error fetching portfolio performance summary:', error);
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  async getPortfolioPerformance(portfolioId: string): Promise<PerformancePortfolio> {
+    try {
+      const response = await retryRequest(
+        () => api.get<PerformancePortfolio>(`/portfolios/${portfolioId}/performance`),
+        3,
+        1000
+      );
+      return response.data;
+    } catch (error: unknown) {
+      console.error('Error fetching single portfolio performance:', error);
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  async createPortfolioWithPerformance(portfolioData: PortfolioCreate): Promise<PerformancePortfolio> {
+    try {
+      const response = await retryRequest(
+        () => api.post<PerformancePortfolio>('/portfolios/', portfolioData),
+        2,
+        1000
+      );
+      return response.data;
+    } catch (error: unknown) {
+      console.error('Error creating portfolio:', error);
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  async updatePortfolio(portfolioId: string, updateData: { name?: string; type?: string; expense_ratio?: number }): Promise<PerformancePortfolio> {
+    try {
+      const response = await retryRequest(
+        () => api.put<PerformancePortfolio>(`/portfolios/${portfolioId}/performance`, updateData),
+        2,
+        1000
+      );
+      return response.data;
+    } catch (error: unknown) {
+      console.error('Error updating portfolio:', error);
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  async deletePortfolio(portfolioId: string): Promise<void> {
+    try {
+      await retryRequest(
+        () => api.delete(`/portfolios/${portfolioId}/performance`),
+        2,
+        1000
+      );
+    } catch (error: unknown) {
+      console.error('Error deleting portfolio:', error);
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  // ============ PORTFOLIO HOLDINGS ============
+
+  async getPortfolioHoldings(portfolioId: string): Promise<HoldingResponse[]> {
+    try {
+      const response = await retryRequest(
+        () => api.get<HoldingResponse[]>(`/portfolios/${portfolioId}/holdings`),
+        3,
+        1000
+      );
+      return response.data;
+    } catch (error: unknown) {
+      console.error('Error fetching portfolio holdings:', error);
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  async addHoldingsToPortfolio(portfolioId: string, holdings: HoldingCreate[]): Promise<{ message: string }> {
+    try {
+      const response = await retryRequest(
+        () => api.post<{ message: string }>(`/portfolios/${portfolioId}/holdings`, holdings),
+        2,
+        1000
+      );
+      return response.data;
+    } catch (error: unknown) {
+      console.error('Error adding holdings:', error);
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  async updateDailyData(portfolioId: string, priceData: { date: string; holdings_prices: Record<string, number> }): Promise<{ message: string; result: unknown }> {
+    try {
+      const response = await retryRequest(
+        () => api.post<{ message: string; result: unknown }>(`/portfolios/${portfolioId}/daily-data`, priceData),
+        2,
+        1000
+      );
+      return response.data;
+    } catch (error: unknown) {
+      console.error('Error updating daily data:', error);
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  async recalculatePerformance(portfolioId: string): Promise<PerformancePortfolio> {
+    try {
+      const response = await retryRequest(
+        () => api.post<{ message: string; result: PerformancePortfolio }>(`/portfolios/${portfolioId}/recalculate`),
+        2,
+        2000
+      );
+      return response.data.result;
+    } catch (error: unknown) {
+      console.error('Error recalculating performance:', error);
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  // ============ UTILITY ENDPOINTS ============
+
+  async getAvailableBenchmarks(): Promise<{ benchmarks: Array<{ name: string; symbol: string; description: string }> }> {
+    try {
+      const response = await retryRequest(
+        () => api.get<{ benchmarks: Array<{ name: string; symbol: string; description: string }> }>('/portfolios/performance/benchmarks'),
+        3,
+        1000
+      );
+      return response.data;
+    } catch (error: unknown) {
+      console.error('Error fetching benchmarks:', error);
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  async getAvailableMetrics(): Promise<{ metrics: Record<string, string> }> {
+    try {
+      const response = await retryRequest(
+        () => api.get<{ metrics: Record<string, string> }>('/portfolios/performance/metrics'),
+        3,
+        1000
+      );
+      return response.data;
+    } catch (error: unknown) {
+      console.error('Error fetching metrics:', error);
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  // ============ HEALTH CHECK ============
+
+  async healthCheck(): Promise<{ status: string; config: typeof apiConfig }> {
+    try {
+      const response = await api.get<{ status: string }>('/');
+      return {
+        ...response.data,
+        config: apiConfig
+      };
+    } catch (error: unknown) {
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  async detailedHealthCheck(): Promise<unknown> {
+    try {
+      const response = await api.get('/health/detailed');
+      return response.data;
+    } catch (error: unknown) {
+      throw new Error(handleApiError(error));
+    }
+  },
 };
 
 export default api;

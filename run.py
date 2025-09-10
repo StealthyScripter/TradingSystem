@@ -1,344 +1,402 @@
 #!/usr/bin/env python3
 """
-Investment Portfolio Full Stack Startup Script
-Cross-platform Python script to run both FastAPI backend and Next.js frontend
+FlexPesa Portfolio - Full Stack Development Runner
+Automatically sets up and runs both backend and frontend
 """
 
 import os
 import sys
 import subprocess
+import platform
 import time
-import threading
 import signal
-import webbrowser
+import threading
 from pathlib import Path
 
-
 class Colors:
-    """ANSI color codes for terminal output"""
-    RED = '\033[0;31m'
-    GREEN = '\033[0;32m'
-    YELLOW = '\033[1;33m'
-    BLUE = '\033[0;34m'
-    PURPLE = '\033[0;35m'
-    CYAN = '\033[0;36m'
-    WHITE = '\033[1;37m'
+    HEADER = '\033[95m'
+    BLUE = '\033[94m'
+    CYAN = '\033[96m'
+    GREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
     BOLD = '\033[1m'
-    END = '\033[0m'
 
+def print_header(message):
+    print(f"\n{Colors.HEADER}{Colors.BOLD}{'='*60}{Colors.ENDC}")
+    print(f"{Colors.HEADER}{Colors.BOLD}{message.center(60)}{Colors.ENDC}")
+    print(f"{Colors.HEADER}{Colors.BOLD}{'='*60}{Colors.ENDC}\n")
 
-class PortfolioRunner:
-    def __init__(self):
-        self.backend_process = None
-        self.frontend_process = None
-        self.root_dir = Path(__file__).parent
-        self.backend_dir = self.root_dir / "flexpesa-ai"
-        self.frontend_dir = self.root_dir / "flexpesa-client"
+def print_success(message):
+    print(f"{Colors.GREEN}✅ {message}{Colors.ENDC}")
 
-    def print_header(self):
-        """Print startup header"""
-        header = f"""
-{Colors.BLUE}╔══════════════════════════════════════════════════════════════╗
-║                 Investment Portfolio MVP                     ║
-║              FastAPI + Next.js Full Stack                   ║
-╚══════════════════════════════════════════════════════════════╝{Colors.END}
-"""
-        print(header)
+def print_warning(message):
+    print(f"{Colors.WARNING}⚠️  {message}{Colors.ENDC}")
 
-    def log(self, message, color=Colors.GREEN):
-        """Print colored log message"""
-        print(f"{color}[INFO]{Colors.END} {message}")
+def print_error(message):
+    print(f"{Colors.FAIL}❌ {message}{Colors.ENDC}")
 
-    def warn(self, message):
-        """Print warning message"""
-        print(f"{Colors.YELLOW}[WARN]{Colors.END} {message}")
+def print_info(message):
+    print(f"{Colors.CYAN}ℹ️  {message}{Colors.ENDC}")
 
-    def error(self, message):
-        """Print error message"""
-        print(f"{Colors.RED}[ERROR]{Colors.END} {message}")
+def run_command(command, cwd=None, shell=True, check=True):
+    """Run a command and return the result"""
+    try:
+        result = subprocess.run(
+            command,
+            shell=shell,
+            cwd=cwd,
+            check=check,
+            capture_output=True,
+            text=True
+        )
+        return result
+    except subprocess.CalledProcessError as e:
+        print_error(f"Command failed: {command}")
+        print_error(f"Error: {e.stderr}")
+        return None
 
-    def command_exists(self, command):
-        """Check if a command exists in PATH"""
-        try:
-            subprocess.run([command, "--version"],
-                         capture_output=True, check=True)
-            return True
-        except (subprocess.CalledProcessError, FileNotFoundError):
+def check_prerequisites():
+    """Check if required tools are installed"""
+    print_header("CHECKING PREREQUISITES")
+
+    # Check Python
+    try:
+        python_version = subprocess.check_output([sys.executable, "--version"], text=True).strip()
+        print_success(f"Python: {python_version}")
+    except Exception as e:
+        print_error(f"Python check failed: {e}")
+        return False
+
+    # Check Node.js
+    try:
+        node_version = subprocess.check_output(["node", "--version"], text=True).strip()
+        print_success(f"Node.js: {node_version}")
+    except Exception as e:
+        print_error("Node.js not found. Please install Node.js 18+ from https://nodejs.org/")
+        return False
+
+    # Check npm
+    try:
+        npm_version = subprocess.check_output(["npm", "--version"], text=True).strip()
+        print_success(f"npm: {npm_version}")
+    except Exception as e:
+        print_error("npm not found")
+        return False
+
+    return True
+
+def find_project_directories():
+    """Find backend and frontend directories"""
+    current_dir = Path.cwd()
+
+    # Look for backend directory
+    backend_candidates = [
+        current_dir / "flexpesa-ai",
+        current_dir / "backend",
+        current_dir / "api",
+        current_dir,  # Current directory might be backend
+    ]
+
+    backend_dir = None
+    for candidate in backend_candidates:
+        if (candidate / "requirements.txt").exists() or (candidate / "app").exists():
+            backend_dir = candidate
+            break
+
+    # Look for frontend directory
+    frontend_candidates = [
+        current_dir / "flexpesa-client",
+        current_dir / "frontend",
+        current_dir / "client",
+        current_dir,  # Current directory might be frontend
+    ]
+
+    frontend_dir = None
+    for candidate in frontend_candidates:
+        if (candidate / "package.json").exists() and (candidate / "next.config.ts").exists():
+            frontend_dir = candidate
+            break
+
+    return backend_dir, frontend_dir
+
+def setup_backend(backend_dir):
+    """Set up Python virtual environment and install backend dependencies"""
+    print_header("SETTING UP BACKEND")
+
+    if not backend_dir:
+        print_error("Backend directory not found")
+        return False
+
+    print_info(f"Backend directory: {backend_dir}")
+
+    # Create virtual environment
+    venv_dir = backend_dir / "venv"
+    if not venv_dir.exists():
+        print_info("Creating virtual environment...")
+        result = run_command(f"{sys.executable} -m venv venv", cwd=backend_dir)
+        if not result:
             return False
+        print_success("Virtual environment created")
+    else:
+        print_success("Virtual environment already exists")
 
-    def check_prerequisites(self):
-        """Check if required tools are installed"""
-        self.log("Checking prerequisites...")
+    # Determine activation script based on OS
+    if platform.system() == "Windows":
+        activate_script = venv_dir / "Scripts" / "activate.bat"
+        pip_path = venv_dir / "Scripts" / "pip"
+    else:
+        activate_script = venv_dir / "bin" / "activate"
+        pip_path = venv_dir / "bin" / "pip"
 
-        # Check Python
-        if not self.command_exists("python") and not self.command_exists("python3"):
-            self.error("Python is not installed. Please install Python 3.8+ and try again.")
+    # Install requirements
+    requirements_file = backend_dir / "requirements.txt"
+    if requirements_file.exists():
+        print_info("Installing Python dependencies...")
+        result = run_command(f"{pip_path} install -r requirements.txt", cwd=backend_dir)
+        if not result:
+            print_warning("Some packages might have failed to install, but continuing...")
+        print_success("Backend dependencies installed")
+    else:
+        print_warning("requirements.txt not found, skipping dependency installation")
+
+    return True
+
+def setup_frontend(frontend_dir):
+    """Set up frontend dependencies"""
+    print_header("SETTING UP FRONTEND")
+
+    if not frontend_dir:
+        print_error("Frontend directory not found")
+        return False
+
+    print_info(f"Frontend directory: {frontend_dir}")
+
+    # Install npm dependencies
+    node_modules = frontend_dir / "node_modules"
+    if not node_modules.exists():
+        print_info("Installing Node.js dependencies...")
+        result = run_command("npm install", cwd=frontend_dir)
+        if not result:
             return False
+        print_success("Frontend dependencies installed")
+    else:
+        print_success("Frontend dependencies already installed")
 
-        # Check Node.js
-        if not self.command_exists("node"):
-            self.error("Node.js is not installed. Please install Node.js 18+ and try again.")
-            return False
+    return True
 
-        # Check npm
-        if not self.command_exists("npm"):
-            self.error("npm is not installed. Please install npm and try again.")
-            return False
+def check_ports():
+    """Check if required ports are available"""
+    import socket
 
-        self.log("✅ All prerequisites found")
-        return True
+    def is_port_open(port):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(1)
+        result = sock.connect_ex(('localhost', port))
+        sock.close()
+        return result == 0
 
-    def get_python_cmd(self):
-        """Get the correct Python command"""
-        if self.command_exists("python3"):
-            return "python3"
-        return "python"
+    backend_port = 8000
+    frontend_port = 3000
 
-    def setup_backend(self):
-        """Setup FastAPI backend"""
-        self.log("Setting up FastAPI backend...")
+    if is_port_open(backend_port):
+        print_warning(f"Port {backend_port} is already in use (backend)")
+        return False
 
-        # Change to backend directory
-        os.chdir(self.backend_dir)
+    if is_port_open(frontend_port):
+        print_warning(f"Port {frontend_port} is already in use (frontend)")
+        return False
 
-        python_cmd = self.get_python_cmd()
+    return True
 
-        # Create virtual environment if it doesn't exist
-        venv_dir = self.backend_dir / "venv"
-        if not venv_dir.exists():
-            self.log("Creating Python virtual environment...")
-            subprocess.run([python_cmd, "-m", "venv", "venv"], check=True)
+def start_backend(backend_dir):
+    """Start the backend server"""
+    if platform.system() == "Windows":
+        python_path = backend_dir / "venv" / "Scripts" / "python"
+    else:
+        python_path = backend_dir / "venv" / "bin" / "python"
 
-        # Get activation script path
-        if os.name == 'nt':  # Windows
-            activate_script = venv_dir / "Scripts" / "activate.bat"
-            pip_cmd = venv_dir / "Scripts" / "pip"
-            python_venv = venv_dir / "Scripts" / "python"
-        else:  # Unix/Linux/Mac
-            activate_script = venv_dir / "bin" / "activate"
-            pip_cmd = venv_dir / "bin" / "pip"
-            python_venv = venv_dir / "bin" / "python"
+    # Try different ways to start the backend
+    run_py = backend_dir / "run.py"
+    if run_py.exists():
+        cmd = f"{python_path} run.py"
+    else:
+        cmd = f"{python_path} -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
 
-        # Install dependencies
-        self.log("Installing Python dependencies...")
-        subprocess.run([str(pip_cmd), "install", "--upgrade", "pip"], check=True)
-        subprocess.run([str(pip_cmd), "install", "-r", "requirements.txt"], check=True)
+    print_info(f"Starting backend with: {cmd}")
 
-        # Create data directory
-        data_dir = self.backend_dir / "data"
-        data_dir.mkdir(exist_ok=True)
+    return subprocess.Popen(
+        cmd,
+        shell=True,
+        cwd=backend_dir,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+        universal_newlines=True
+    )
 
-        # Initialize database
-        self.log("Initializing database with sample data...")
-        init_script = self.backend_dir / "scripts" / "init_data.py"
-        subprocess.run([str(python_venv), str(init_script)], check=True)
+def start_frontend(frontend_dir):
+    """Start the frontend server"""
+    cmd = "npm run dev"
+    print_info(f"Starting frontend with: {cmd}")
 
+    return subprocess.Popen(
+        cmd,
+        shell=True,
+        cwd=frontend_dir,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+        universal_newlines=True
+    )
 
-        self.log("✅ Backend setup complete")
-        return python_venv
-
-    def setup_frontend(self):
-        """Setup Next.js frontend"""
-        self.log("Setting up Next.js frontend...")
-
-        # Change to frontend directory
-        os.chdir(self.frontend_dir)
-
-        # Install Node.js dependencies
-        node_modules = self.frontend_dir / "node_modules"
-        if not node_modules.exists():
-            self.log("Installing Node.js dependencies...")
-            subprocess.run(["npm", "install"], check=True)
-        else:
-            self.log("Node.js dependencies already installed")
-
-        self.log("✅ Frontend setup complete")
-
-    def start_backend(self, python_venv):
-        """Start FastAPI backend in a separate process"""
-        self.log("🚀 Starting FastAPI backend on http://localhost:8000")
-
-        os.chdir(self.backend_dir)
-
-        try:
-            self.backend_process = subprocess.Popen(
-                [str(python_venv), "run.py"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                universal_newlines=True,
-                bufsize=1
-            )
-
-            # Start thread to handle backend output
-            backend_thread = threading.Thread(
-                target=self._handle_output,
-                args=(self.backend_process, "BACKEND"),
-                daemon=True
-            )
-            backend_thread.start()
-
-        except Exception as e:
-            self.error(f"Failed to start backend: {e}")
-            return False
-
-        return True
-
-    def start_frontend(self):
-        """Start Next.js frontend in a separate process"""
-        self.log("🚀 Starting Next.js frontend on http://localhost:3000")
-
-        os.chdir(self.frontend_dir)
-
-        try:
-            self.frontend_process = subprocess.Popen(
-                ["npm", "run", "dev"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                universal_newlines=True,
-                bufsize=1
-            )
-
-            # Start thread to handle frontend output
-            frontend_thread = threading.Thread(
-                target=self._handle_output,
-                args=(self.frontend_process, "FRONTEND"),
-                daemon=True
-            )
-            frontend_thread.start()
-
-        except Exception as e:
-            self.error(f"Failed to start frontend: {e}")
-            return False
-
-        return True
-
-    def _handle_output(self, process, service_name):
-        """Handle output from backend/frontend processes"""
-        color = Colors.CYAN if service_name == "BACKEND" else Colors.PURPLE
-
+def monitor_process(process, name, color):
+    """Monitor and display output from a process"""
+    def read_output():
         for line in iter(process.stdout.readline, ''):
-            if line.strip():
-                print(f"{color}[{service_name}]{Colors.END} {line.strip()}")
+            if line:
+                print(f"{color}[{name}]{Colors.ENDC} {line.rstrip()}")
 
-    def open_browser(self):
-        """Open browser to frontend URL"""
-        try:
-            self.log("Opening browser...")
-            time.sleep(2)
-            webbrowser.open("http://localhost:3000")
-        except Exception as e:
-            self.warn(f"Could not open browser: {e}")
+    thread = threading.Thread(target=read_output, daemon=True)
+    thread.start()
+    return thread
 
-    def print_status(self):
-        """Print running status"""
-        status = f"""
-{Colors.GREEN}
-╔══════════════════════════════════════════════════════════════╗
-║                     🎉 SERVICES RUNNING                      ║
-╠══════════════════════════════════════════════════════════════╣
-║  📱 Frontend (Next.js):  http://localhost:3000               ║
-║  🔧 Backend API (FastAPI): http://localhost:8000             ║
-║  📊 API Documentation:   http://localhost:8000/docs          ║
-║                                                              ║
-║  🛑 Press Ctrl+C to stop all services                        ║
-╚══════════════════════════════════════════════════════════════╝
-{Colors.END}
+def create_env_files(backend_dir, frontend_dir):
+    """Create basic .env files if they don't exist"""
+    print_header("CONFIGURING ENVIRONMENT")
+
+    # Backend .env
+    if backend_dir:
+        backend_env = backend_dir / ".env"
+        if not backend_env.exists():
+            env_content = """# Environment
+ENVIRONMENT=development
+DEBUG=true
+
+# Database (update with your PostgreSQL credentials)
+DATABASE_URL=postgresql://portfolio_user:portfolio_password@localhost:5432/portfolio_db
+
+# Security
+SECRET_KEY=dev-secret-key-change-in-production
+
+# Authentication (disabled for development)
+DISABLE_AUTH=true
+
+# CORS
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000
+
+# Server
+HOST=0.0.0.0
+BACKEND_PORT=8000
 """
-        print(status)
+            backend_env.write_text(env_content)
+            print_success("Created backend .env file")
+        else:
+            print_success("Backend .env file already exists")
 
-    def cleanup(self):
-        """Clean up processes on exit"""
-        self.log("Shutting down services...")
+    # Frontend .env.local
+    if frontend_dir:
+        frontend_env = frontend_dir / ".env.local"
+        if not frontend_env.exists():
+            env_content = """# API Configuration
+NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+NEXT_PUBLIC_BACKEND_PORT=8000
+NEXT_PUBLIC_API_TIMEOUT=15000
 
-        if self.backend_process:
-            self.backend_process.terminate()
-            try:
-                self.backend_process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                self.backend_process.kill()
+# Development flags
+NODE_ENV=development
+"""
+            frontend_env.write_text(env_content)
+            print_success("Created frontend .env.local file")
+        else:
+            print_success("Frontend .env.local file already exists")
 
-        if self.frontend_process:
-            self.frontend_process.terminate()
-            try:
-                self.frontend_process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                self.frontend_process.kill()
+def main():
+    """Main execution function"""
+    print_header("FLEXPESA PORTFOLIO - FULL STACK RUNNER")
 
-    def run(self):
-        """Main run method"""
+    # Handle Ctrl+C gracefully
+    def signal_handler(sig, frame):
+        print(f"\n{Colors.WARNING}Shutting down servers...{Colors.ENDC}")
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, signal_handler)
+
+    # Check prerequisites
+    if not check_prerequisites():
+        print_error("Prerequisites not met. Please install missing tools.")
+        sys.exit(1)
+
+    # Find project directories
+    backend_dir, frontend_dir = find_project_directories()
+
+    if not backend_dir:
+        print_error("Backend directory not found. Please run this script from the project root.")
+        sys.exit(1)
+
+    if not frontend_dir:
+        print_error("Frontend directory not found. Please run this script from the project root.")
+        sys.exit(1)
+
+    # Create environment files
+    create_env_files(backend_dir, frontend_dir)
+
+    # Setup backend
+    if not setup_backend(backend_dir):
+        print_error("Backend setup failed")
+        sys.exit(1)
+
+    # Setup frontend
+    if not setup_frontend(frontend_dir):
+        print_error("Frontend setup failed")
+        sys.exit(1)
+
+    # Check ports
+    if not check_ports():
+        print_error("Required ports are not available")
+        sys.exit(1)
+
+    # Start servers
+    print_header("STARTING SERVERS")
+
+    try:
+        # Start backend
+        backend_process = start_backend(backend_dir)
+        backend_thread = monitor_process(backend_process, "BACKEND", Colors.BLUE)
+
+        # Wait a moment for backend to start
+        time.sleep(3)
+
+        # Start frontend
+        frontend_process = start_frontend(frontend_dir)
+        frontend_thread = monitor_process(frontend_process, "FRONTEND", Colors.GREEN)
+
+        # Print success message
+        time.sleep(2)
+        print_header("SERVERS RUNNING")
+        print_success("Backend API: http://localhost:8000")
+        print_success("Frontend App: http://localhost:3000")
+        print_success("API Docs: http://localhost:8000/docs")
+        print_info("Press Ctrl+C to stop all servers")
+
+        # Wait for processes
         try:
-            self.print_header()
+            backend_process.wait()
+            frontend_process.wait()
+        except KeyboardInterrupt:
+            print(f"\n{Colors.WARNING}Stopping servers...{Colors.ENDC}")
+            backend_process.terminate()
+            frontend_process.terminate()
+            backend_process.wait()
+            frontend_process.wait()
+            print_success("All servers stopped")
 
-            # Check prerequisites
-            if not self.check_prerequisites():
-                return 1
-
-            # Setup backend
-            python_venv = self.setup_backend()
-
-            # Setup frontend
-            self.setup_frontend()
-
-            # Start backend
-            if not self.start_backend(python_venv):
-                return 1
-
-            # Wait for backend to start
-            time.sleep(3)
-
-            # Start frontend
-            if not self.start_frontend():
-                return 1
-
-            # Wait for frontend to start
-            time.sleep(5)
-
-            # Print status
-            self.print_status()
-
-            # Open browser
-            self.open_browser()
-
-            # Keep running until interrupted
-            try:
-                while True:
-                    time.sleep(1)
-
-                    # Check if processes are still running
-                    if self.backend_process and self.backend_process.poll() is not None:
-                        self.error("Backend process stopped unexpectedly")
-                        break
-
-                    if self.frontend_process and self.frontend_process.poll() is not None:
-                        self.error("Frontend process stopped unexpectedly")
-                        break
-
-            except KeyboardInterrupt:
-                self.log("Received interrupt signal")
-
-        except Exception as e:
-            self.error(f"Unexpected error: {e}")
-            return 1
-
-        finally:
-            self.cleanup()
-
-        return 0
-
-
-def signal_handler(signum, frame):
-    """Handle interrupt signals"""
-    print("\nReceived interrupt signal, shutting down...")
-    sys.exit(0)
-
+    except Exception as e:
+        print_error(f"Error starting servers: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
-    # Set up signal handlers
-    signal.signal(signal.SIGINT, signal_handler)
-    if hasattr(signal, 'SIGTERM'):
-        signal.signal(signal.SIGTERM, signal_handler)
-
-    # Run the application
-    runner = PortfolioRunner()
-    exit_code = runner.run()
-    sys.exit(exit_code)
+    main()
