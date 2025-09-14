@@ -1,28 +1,35 @@
 import React from 'react';
 import { TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
-import { PortfolioData } from '@/types';
+import { PortfolioSummary } from '@/types';
 import { formatCurrency, formatPercent } from '../lib/utils';
 
 interface PortfolioSummaryProps {
-  portfolioData: PortfolioData;
+  portfolioData: PortfolioSummary; // Use actual API type, not PortfolioData
   lastUpdated: string;
   onRefresh: () => void;
   isRefreshing: boolean;
 }
 
-const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ 
-  portfolioData, 
-  lastUpdated, 
-  onRefresh, 
-  isRefreshing 
+const PortfolioSummaryComponent: React.FC<PortfolioSummaryProps> = ({
+  portfolioData,
+  lastUpdated,
+  onRefresh,
+  isRefreshing
 }) => {
   if (!portfolioData) return null;
 
-  const { accounts, total_value, analysis } = portfolioData;
-  
-  // Calculate day change (mock for now - can be enhanced)
-  const totalDayChange = total_value * 0.012; // Mock 1.2% daily change
-  const totalDayChangePercent = 1.2;
+  const { accounts, summary, analysis } = portfolioData;
+
+  // Use actual API response structure: summary.total_value instead of total_value
+  const totalValue = summary.total_value;
+  const totalAssets = summary.total_assets;
+  const totalAccounts = summary.total_accounts;
+  const totalPnL = summary.total_pnl;
+  const totalPnLPercent = summary.total_pnl_percent;
+
+  // Calculate day change from total P&L (or use mock data if not available in API)
+  const totalDayChange = totalPnL * 0.1; // Mock calculation - adjust based on actual API data
+  const totalDayChangePercent = totalPnLPercent * 0.1; // Mock calculation
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
@@ -43,33 +50,33 @@ const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({
           </button>
         </div>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {/* Total Portfolio Value */}
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-lg">
-          <div className="text-3xl font-bold">{formatCurrency(total_value, 0)}</div>
+          <div className="text-3xl font-bold">{formatCurrency(totalValue, 0)}</div>
           <div className="text-sm opacity-90 mt-1">Total Portfolio Value</div>
         </div>
-        
-        {/* Day Change */}
-        <div className={`bg-gradient-to-r ${totalDayChange >= 0 ? 'from-green-500 to-green-600' : 'from-red-500 to-red-600'} text-white p-6 rounded-lg`}>
+
+        {/* Total P&L */}
+        <div className={`bg-gradient-to-r ${totalPnL >= 0 ? 'from-green-500 to-green-600' : 'from-red-500 to-red-600'} text-white p-6 rounded-lg`}>
           <div className="text-3xl font-bold flex items-center gap-2">
-            {totalDayChange >= 0 ? <TrendingUp size={28} /> : <TrendingDown size={28} />}
-            {formatCurrency(Math.abs(totalDayChange), 0)}
+            {totalPnL >= 0 ? <TrendingUp size={28} /> : <TrendingDown size={28} />}
+            {formatCurrency(Math.abs(totalPnL), 0)}
           </div>
-          <div className="text-sm opacity-90 mt-1">Today&#39;s Change</div>
+          <div className="text-sm opacity-90 mt-1">Total P&L ({formatPercent(totalPnLPercent)})</div>
         </div>
-        
-        {/* Day Change Percentage */}
-        <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-6 rounded-lg">
-          <div className="text-3xl font-bold">{formatPercent(totalDayChangePercent)}</div>
-          <div className="text-sm opacity-90 mt-1">Day Change %</div>
-        </div>
-        
+
         {/* Active Accounts */}
-        <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-6 rounded-lg">
-          <div className="text-3xl font-bold">{accounts.length}</div>
+        <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-6 rounded-lg">
+          <div className="text-3xl font-bold">{totalAccounts}</div>
           <div className="text-sm opacity-90 mt-1">Active Accounts</div>
+        </div>
+
+        {/* Total Assets */}
+        <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-6 rounded-lg">
+          <div className="text-3xl font-bold">{totalAssets}</div>
+          <div className="text-sm opacity-90 mt-1">Total Assets</div>
         </div>
       </div>
 
@@ -109,4 +116,4 @@ const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({
   );
 };
 
-export default PortfolioSummary;
+export default PortfolioSummaryComponent;

@@ -1,9 +1,9 @@
 import React from 'react';
-import { Account } from '@/types';
+import { PortfolioAccount } from '@/types'; // Use PortfolioAccount instead of Account
 import { getAccountIcon } from '../lib/utils';
 
 interface AccountFilterProps {
-  accounts: Account[];
+  accounts: PortfolioAccount[]; // Updated type
   selectedAccount: string;
   onAccountSelect: (accountId: string) => void;
 }
@@ -15,8 +15,8 @@ const AccountFilter: React.FC<AccountFilterProps> = ({ accounts, selectedAccount
         <button
           onClick={() => onAccountSelect('all')}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            selectedAccount === 'all' 
-              ? 'bg-blue-600 text-white' 
+            selectedAccount === 'all'
+              ? 'bg-blue-600 text-white'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
@@ -25,10 +25,10 @@ const AccountFilter: React.FC<AccountFilterProps> = ({ accounts, selectedAccount
         {accounts.map((account) => (
           <button
             key={account.id}
-            onClick={() => onAccountSelect(account.id.toString())} 
+            onClick={() => onAccountSelect(account.id.toString())}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-              selectedAccount === account.id.toString() 
-                ? 'bg-blue-600 text-white' 
+              selectedAccount === account.id.toString()
+                ? 'bg-blue-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
