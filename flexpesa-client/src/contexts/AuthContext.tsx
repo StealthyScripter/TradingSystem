@@ -1,7 +1,7 @@
 'use client';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { portfolioAPI } from '@/lib/api';
-import { User, RegisterRequest } from '@/types';
+import { User, RegisterRequest, LoginRequest } from '@/types';
 
 interface AuthContextType {
   user: User | null;
@@ -19,7 +19,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      const user = await portfolioAPI.getCurrentUser();
+      // Use the correct API method that exists in API.ts
+      const userProfile = await portfolioAPI.getUserProfile();
+
+      // Transform UserProfile to User format
+      const user: User = {
+        id: userProfile.user_id,
+        email: userProfile.email || '',
+        first_name: userProfile.first_name || '',
+        last_name: userProfile.last_name || '',
+        is_active: true
+      };
+
       setUser(user);
     } catch (error) {
       console.log('Not authenticated');
@@ -31,7 +42,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const response = await portfolioAPI.login({ email, password });
+      const credentials: LoginRequest = { email, password };
+      const response = await portfolioAPI.login(credentials);
       setUser(response.user);
       return true;
     } catch (error) {
@@ -53,7 +65,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      await portfolioAPI.logout();
+      // Note: API.ts doesn't have a logout method, so just clear local state
+      // If the API had a logout endpoint, we would call it here
     } catch (error) {
       console.error('Logout error:', error);
       // Continue with logout even if API call fails
