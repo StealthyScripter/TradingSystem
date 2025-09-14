@@ -8,12 +8,16 @@ export interface Asset {
   shares: number;
   avg_cost: number;
   current_price: number;
-  value: number;
+  // Updated to match actual API response structure
+  market_value: number;        // API returns market_value (not just 'value')
+  value?: number;              // Backward compatibility alias
   cost_basis: number;
-  pnl: number;
-  pnl_percent: number;
-  day_change: number;
-  day_change_percent: number;
+  unrealized_pnl: number;     // API returns unrealized_pnl (not just 'pnl')
+  pnl?: number;               // Backward compatibility alias
+  unrealized_pnl_percent: number;  // API returns unrealized_pnl_percent (not just 'pnl_percent')
+  pnl_percent?: number;            // Backward compatibility alias
+  day_change?: number;
+  day_change_percent?: number;
   asset_type?: string;
   sector?: string;
   industry?: string;
@@ -22,12 +26,12 @@ export interface Asset {
   is_active: boolean;
   created_at: string;
   last_updated: string;
-  price_updated_at: string;
+  price_updated_at?: string;
 }
 
 export interface Account {
   id: number;
-  clerk_user_id: string;
+  clerk_user_id?: string;  // Added to match API structure
   name: string;
   account_type: string;
   description?: string;
@@ -36,10 +40,14 @@ export interface Account {
   pnl: number;
   pnl_percent: number;
   currency: string;
-  is_active: boolean;
+  is_active?: boolean;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
   assets: Asset[];
+}
+
+export interface PortfolioAccount extends Account{
+  portfolio_id?:number;
 }
 
 export interface PortfolioAnalysis {
@@ -61,9 +69,10 @@ export interface PortfolioAnalysis {
   };
 }
 
+
 export interface PortfolioSummary {
   user_id: string;
-  accounts: Account[];
+  accounts: PortfolioAccount[];
   summary: {
     total_value: number;
     total_cost_basis: number;
@@ -77,22 +86,13 @@ export interface PortfolioSummary {
   status: string;
 }
 
-// Legacy interface for backward compatibility
-export interface PortfolioData {
-  accounts: Account[];
-  total_value: number;
-  total_assets: number;
-  analysis: PortfolioAnalysis;
-  last_updated: string;
-  status: string;
-}
-
-// ============ FORM DATA TYPES (specific for forms) ============
+// ============ API REQUEST/RESPONSE TYPES ============
 
 export interface AccountCreateRequest {
   name: string;
   account_type: string;
   description?: string;
+  currency?: string;  // Added optional currency field
 }
 
 export interface AssetCreateRequest {
@@ -100,6 +100,15 @@ export interface AssetCreateRequest {
   symbol: string;
   shares: number;
   avg_cost: number;
+}
+
+export interface UpdatePricesResponse {
+  updated_assets: number;
+  total_assets: number;
+  unique_symbols: number;
+  failed_symbols: string[];
+  duration: number;
+  timestamp: string;
 }
 
 // ============ PERFORMANCE TRACKING TYPES ============
@@ -137,35 +146,6 @@ export interface PortfolioPerformanceSummary {
   total_value: number;
   average_return: number;
   average_sharpe_ratio: number;
-}
-
-// Alias for backward compatibility
-export type PortfolioSummaryStats = PortfolioPerformanceSummary;
-
-export interface HoldingCreate {
-  symbol: string;
-  quantity: number;
-  purchase_price: number;
-  purchase_date: string;
-}
-
-export interface HoldingResponse {
-  symbol: string;
-  quantity: number;
-  purchase_price: number;
-  current_price: number;
-  purchase_date: string;
-  market_value: number;
-  gain_loss: number;
-  gain_loss_percentage: number;
-}
-
-export interface PortfolioCreate {
-  name: string;
-  type: string;
-  initial_investment: number;
-  expense_ratio?: number;
-  holdings: HoldingCreate[];
 }
 
 // ============ AUTHENTICATION TYPES ============
@@ -215,7 +195,46 @@ export interface AuthConfig {
   message?: string;
 }
 
-// ============ MARKET DATA & ANALYSIS TYPES ============
+// ============ ANALYSIS TYPES ============
+
+export interface QuickAnalysisRequest {
+  symbols: string[];
+}
+
+export interface QuickAnalysisResponse {
+  analysis: Record<string, {
+    sentiment: string;
+    confidence: number;
+    recommendation: string;
+    note: string;
+  }>;
+}
+
+export interface AssetAnalysis {
+  success: boolean;
+  symbol: string;
+  analysis: {
+    symbol: string;
+    recommendation: string;
+    technical: {
+      rsi: number;
+      rsi_signal: string;
+      momentum: number;
+      volatility: number;
+      trend: string;
+    };
+    sentiment: {
+      score: number;
+      signal: string;
+      confidence: number;
+      news_count: number;
+    };
+    analysis_type: string;
+  };
+  timestamp: string;
+}
+
+// ============ MARKET DATA TYPES ============
 
 export interface MarketStatus {
   status: string;
@@ -223,27 +242,6 @@ export interface MarketStatus {
   message: string;
   authenticated: boolean;
 }
-
-export interface AssetAnalysis {
-  symbol: string;
-  recommendation: string;
-  technical: {
-    rsi: number;
-    rsi_signal: string;
-    momentum: number;
-    volatility: number;
-    trend: string;
-  };
-  sentiment: {
-    score: number;
-    signal: string;
-    confidence: number;
-    news_count: number;
-  };
-  analysis_type: string;
-}
-
-// ============ UTILITY TYPES ============
 
 export interface Benchmark {
   name: string;
@@ -254,6 +252,29 @@ export interface Benchmark {
 export interface PerformanceMetrics {
   [key: string]: string;
 }
+
+// ============ UTILITY TYPES ============
+
+export type FormValue = string | number | null | undefined;
+
+// ============ LEGACY COMPATIBILITY TYPES ============
+// These are kept for backward compatibility but should be migrated away from
+
+// @deprecated - Use PortfolioSummary instead
+export interface PortfolioData {
+  accounts: Account[];
+  total_value: number;
+  total_assets: number;
+  analysis: PortfolioAnalysis;
+  last_updated: string;
+  status: string;
+}
+
+// Keep the alias for now
+export type PortfolioSummaryStats = PortfolioPerformanceSummary;
+
+// ============ FORM DATA TYPES ============
+// These are specifically for form handling and might differ from API types
 
 export interface PortfolioFormData {
   name: string;
@@ -269,4 +290,29 @@ export interface HoldingFormData {
   purchase_date: string;
 }
 
-export type FormValue = string | number | null | undefined;
+// These were referenced but not used by actual API
+export interface HoldingCreate {
+  symbol: string;
+  quantity: number;
+  purchase_price: number;
+  purchase_date: string;
+}
+
+export interface HoldingResponse {
+  symbol: string;
+  quantity: number;
+  purchase_price: number;
+  current_price: number;
+  purchase_date: string;
+  market_value: number;
+  gain_loss: number;
+  gain_loss_percentage: number;
+}
+
+export interface PortfolioCreate {
+  name: string;
+  type: string;
+  initial_investment: number;
+  expense_ratio?: number;
+  holdings: HoldingCreate[];
+}
