@@ -1,28 +1,51 @@
 import { clsx, ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { Asset, Account } from '@/types';
+import { Asset, Account, PortfolioAccount } from '@/types'; // Add PortfolioAccount import
 
 interface RawAssetData {
   id?: number;
   account_id?: number;
   symbol?: string;
+  name?: string;
   shares?: number | string;
   avg_cost?: number | string;
   current_price?: number | string;
-  value?: number | string;
+  market_value?: number | string;  // API returns market_value
+  value?: number | string;         // Fallback for backward compatibility
+  cost_basis?: number | string;
+  unrealized_pnl?: number | string;  // API returns unrealized_pnl
+  pnl?: number | string;             // Fallback for backward compatibility
+  unrealized_pnl_percent?: number | string;  // API returns unrealized_pnl_percent
+  pnl_percent?: number | string;             // Fallback for backward compatibility
+  day_change?: number | string;
+  day_change_percent?: number | string;
+  asset_type?: string;
+  sector?: string;
+  industry?: string;
+  currency?: string;
+  exchange?: string;
+  is_active?: boolean;
+  created_at?: string;
   last_updated?: string;
-  pnl?: number | string;
-  pnl_percent?: number | string;
+  price_updated_at?: string;
   [key: string]: unknown;
 }
 
 interface RawAccountData {
   id?: number;
+  clerk_user_id?: string;
   name?: string;
   account_type?: string;
+  description?: string;
   balance?: number | string;
-  assets?: RawAssetData[];
+  cost_basis?: number | string;
+  pnl?: number | string;
+  pnl_percent?: number | string;
+  currency?: string;
+  is_active?: boolean;
   created_at?: string;
+  updated_at?: string;
+  assets?: RawAssetData[];
   [key: string]: unknown;
 }
 
@@ -30,12 +53,10 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-
 export function formatCurrency(
   amount: number | string | null | undefined,
   decimals: number = 2
 ): string {
-
   if (amount === null || amount === undefined || amount === '' || isNaN(Number(amount))) {
     return '$0.00';
   }
@@ -196,6 +217,13 @@ function safeString(value: unknown): string {
   return String(value);
 }
 
+function safeBoolean(value: unknown): boolean {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') return value.toLowerCase() === 'true';
+  return Boolean(value);
+}
+
+// Updated to match actual API response structure
 export function validateAssetData(asset: unknown): Asset | null {
   if (!asset || typeof asset !== 'object' || asset === null) {
     return null;
@@ -207,16 +235,35 @@ export function validateAssetData(asset: unknown): Asset | null {
     id: safeNumber(rawAsset.id),
     account_id: safeNumber(rawAsset.account_id),
     symbol: safeString(rawAsset.symbol) || 'UNKNOWN',
+    name: safeString(rawAsset.name),
     shares: safeNumber(rawAsset.shares),
     avg_cost: safeNumber(rawAsset.avg_cost),
     current_price: safeNumber(rawAsset.current_price),
-    value: safeNumber(rawAsset.value),
+    // Use API property names with fallbacks
+    value: safeNumber(rawAsset.market_value) || safeNumber(rawAsset.value), // market_value is primary
+    cost_basis: safeNumber(rawAsset.cost_basis),
+    pnl: safeNumber(rawAsset.unrealized_pnl) || safeNumber(rawAsset.pnl), // unrealized_pnl is primary
+    pnl_percent: safeNumber(rawAsset.unrealized_pnl_percent) || safeNumber(rawAsset.pnl_percent), // unrealized_pnl_percent is primary
+    day_change: safeNumber(rawAsset.day_change),
+    day_change_percent: safeNumber(rawAsset.day_change_percent),
+    asset_type: safeString(rawAsset.asset_type),
+    sector: safeString(rawAsset.sector),
+    industry: safeString(rawAsset.industry),
+    currency: safeString(rawAsset.currency) || 'USD',
+    exchange: safeString(rawAsset.exchange),
+    is_active: safeBoolean(rawAsset.is_active),
+    created_at: safeString(rawAsset.created_at) || new Date().toISOString(),
     last_updated: safeString(rawAsset.last_updated) || new Date().toISOString(),
-    pnl: safeNumber(rawAsset.pnl),
-    pnl_percent: safeNumber(rawAsset.pnl_percent),
+    price_updated_at: safeString(rawAsset.price_updated_at) || new Date().toISOString(),
+
+    // Additional computed properties for backward compatibility
+    market_value: safeNumber(rawAsset.market_value) || safeNumber(rawAsset.value),
+    unrealized_pnl: safeNumber(rawAsset.unrealized_pnl) || safeNumber(rawAsset.pnl),
+    unrealized_pnl_percent: safeNumber(rawAsset.unrealized_pnl_percent) || safeNumber(rawAsset.pnl_percent),
   };
 }
 
+// Updated to match actual API response structure
 export function validateAccountData(account: unknown): Account | null {
   if (!account || typeof account !== 'object' || account === null) {
     return null;
@@ -226,15 +273,30 @@ export function validateAccountData(account: unknown): Account | null {
 
   return {
     id: safeNumber(rawAccount.id),
+    clerk_user_id: safeString(rawAccount.clerk_user_id),
     name: safeString(rawAccount.name) || 'Unknown Account',
     account_type: safeString(rawAccount.account_type) || 'brokerage',
+    description: safeString(rawAccount.description),
     balance: safeNumber(rawAccount.balance),
+    cost_basis: safeNumber(rawAccount.cost_basis),
+    pnl: safeNumber(rawAccount.pnl),
+    pnl_percent: safeNumber(rawAccount.pnl_percent),
+    currency: safeString(rawAccount.currency) || 'USD',
+    is_active: safeBoolean(rawAccount.is_active),
+    created_at: safeString(rawAccount.created_at) || new Date().toISOString(),
+    updated_at: safeString(rawAccount.updated_at) || new Date().toISOString(),
     assets: Array.isArray(rawAccount.assets)
       ? rawAccount.assets.map(validateAssetData).filter((asset): asset is Asset => asset !== null)
       : [],
-    created_at: safeString(rawAccount.created_at) || new Date().toISOString(),
   };
 }
+
+export function validatePortfolioAccountData(account: PortfolioAccount | null | undefined): PortfolioAccount | null {
+  if (!account) return null;
+  if (!account.id || !account.name) return null; // example validation
+  return account;
+}
+
 
 export function isLoadingValue(value: unknown): boolean {
   return value === null ||

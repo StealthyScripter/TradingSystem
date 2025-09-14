@@ -294,6 +294,28 @@ interface ErrorResponse {
   timestamp?: number;
 }
 
+interface PortfolioCreate {
+  name: string;
+  type: string;
+  initial_investment: number;
+  expense_ratio?: number;
+  holdings: HoldingCreate[];
+}
+
+interface HoldingCreate {
+  symbol: string;
+  quantity: number;
+  purchase_price: number;
+  purchase_date: string;
+}
+
+interface APIResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+}
+
 // ============ API CONFIGURATION ============
 
 const getApiBaseUrl = (): string => {
