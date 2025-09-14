@@ -104,6 +104,13 @@ export default function Header({title, subtitle}: HeaderProps) {
                 >
                   Perfomance
                 </Link>
+                <Link
+                  href="/new"
+                  className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                  onClick={() => setIsOpen(false)}
+                >
+                  New
+                </Link>
               </li>
             </ul>
           </div>
