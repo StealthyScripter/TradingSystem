@@ -1,26 +1,26 @@
 import React from 'react';
 import { TrendingUp, TrendingDown, Brain, BarChart3, RefreshCw } from 'lucide-react';
-import { Account, Asset } from '@/types';
-import { 
-  formatCurrency, 
-  formatNumber, 
-  formatPercent, 
+import { PortfolioAccount, Asset } from '@/types'; // Use PortfolioAccount instead of Account
+import {
+  formatCurrency,
+  formatNumber,
+  formatPercent,
   formatDate,
-  getAccountIcon, 
+  getAccountIcon,
   validateAssetData,
-  validateAccountData,
+  validatePortfolioAccountData, // New validation function for PortfolioAccount
   isLoadingValue,
   getPnLColorClass
 } from '../lib/utils';
 
 interface AssetTableProps {
-  accounts: Account[];
+  accounts: PortfolioAccount[]; // Updated type
   selectedAccount: string;
   onAnalyze: (symbol: string) => void;
 }
 
 interface AccountSectionProps {
-  account: Account;
+  account: PortfolioAccount; // Updated type
   onAnalyze: (symbol: string) => void;
 }
 
@@ -29,14 +29,16 @@ interface AssetRowProps {
   onAnalyze: (symbol: string) => void;
 }
 
+
+
 const AssetTable: React.FC<AssetTableProps> = ({ accounts, selectedAccount, onAnalyze }) => {
   // Validate and filter accounts
   const validAccounts = (accounts || [])
-    .map(validateAccountData)
-    .filter(Boolean) as Account[];
+    .map(validatePortfolioAccountData)
+    .filter(Boolean) as PortfolioAccount[];
 
-  const filteredAccounts = selectedAccount === 'all' 
-    ? validAccounts 
+  const filteredAccounts = selectedAccount === 'all'
+    ? validAccounts
     : validAccounts.filter(account => account.id.toString() === selectedAccount.toString());
 
   if (!filteredAccounts.length) {
@@ -54,12 +56,12 @@ const AssetTable: React.FC<AssetTableProps> = ({ accounts, selectedAccount, onAn
   return (
     <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
       <h3 className="text-xl font-bold mb-6">Portfolio Holdings</h3>
-      
+
       <div className="space-y-6">
         {filteredAccounts.map((account) => (
-          <AccountSection 
-            key={account.id} 
-            account={account} 
+          <AccountSection
+            key={account.id}
+            account={account}
             onAnalyze={onAnalyze}
           />
         ))}
@@ -94,7 +96,7 @@ const AccountSection: React.FC<AccountSectionProps> = ({ account, onAnalyze }) =
           </div>
         </div>
       </div>
-      
+
       {validAssets.length > 0 ? (
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -106,14 +108,15 @@ const AccountSection: React.FC<AccountSectionProps> = ({ account, onAnalyze }) =
                 <th className="pb-3">Current Price</th>
                 <th className="pb-3">Market Value</th>
                 <th className="pb-3">P&L</th>
+                <th className="pb-3">Day Change</th>
                 <th className="pb-3">Actions</th>
               </tr>
             </thead>
             <tbody>
               {validAssets.map((asset, index) => (
-                <AssetRow 
-                  key={asset.id || index} 
-                  asset={asset} 
+                <AssetRow
+                  key={asset.id || index}
+                  asset={asset}
                   onAnalyze={onAnalyze}
                 />
               ))}
@@ -130,15 +133,16 @@ const AccountSection: React.FC<AccountSectionProps> = ({ account, onAnalyze }) =
 };
 
 const AssetRow: React.FC<AssetRowProps> = ({ asset, onAnalyze }) => {
-  // Calculate values with safe fallbacks
+  // Use API-provided calculated values instead of manual calculations
   const shares = asset.shares || 0;
   const avgCost = asset.avg_cost || 0;
   const currentPrice = asset.current_price || 0;
-  const currentValue = shares * currentPrice;
-  const totalCost = shares * avgCost;
-  const pnl = currentValue - totalCost;
-  const pnlPercent = totalCost > 0 ? ((currentValue - totalCost) / totalCost) * 100 : 0;
-  
+  const marketValue = asset.market_value || asset.value || 0; // Use API-provided market_value
+  const unrealizedPnL = asset.unrealized_pnl || asset.pnl || 0; // Use API-provided unrealized_pnl
+  const unrealizedPnLPercent = asset.unrealized_pnl_percent || asset.pnl_percent || 0; // Use API-provided percentage
+  const dayChange = asset.day_change || 0; // Use API-provided day_change
+  const dayChangePercent = asset.day_change_percent || 0; // Use API-provided day_change_percent
+
   // Check if data is still loading
   const isPriceLoading = currentPrice === 0 || isLoadingValue(currentPrice);
   const isDataLoading = isLoadingValue(avgCost) || isLoadingValue(shares);
@@ -154,13 +158,16 @@ const AssetRow: React.FC<AssetRowProps> = ({ asset, onAnalyze }) => {
           </div>
           <div>
             <span className="font-semibold">{asset.symbol || 'UNKNOWN'}</span>
+            {asset.name && (
+              <div className="text-xs text-gray-500">{asset.name}</div>
+            )}
             <div className="text-xs text-gray-500">
               Updated {formatDate(asset.last_updated)}
             </div>
           </div>
         </div>
       </td>
-      
+
       <td className="py-4 font-medium">
         {isDataLoading ? (
           <div className="animate-pulse bg-gray-200 h-4 w-16 rounded"></div>
@@ -168,7 +175,7 @@ const AssetRow: React.FC<AssetRowProps> = ({ asset, onAnalyze }) => {
           formatNumber(shares)
         )}
       </td>
-      
+
       <td className="py-4">
         {isDataLoading ? (
           <div className="animate-pulse bg-gray-200 h-4 w-20 rounded"></div>
@@ -176,7 +183,7 @@ const AssetRow: React.FC<AssetRowProps> = ({ asset, onAnalyze }) => {
           formatCurrency(avgCost)
         )}
       </td>
-      
+
       <td className="py-4 font-semibold">
         {isPriceLoading ? (
           <div className="flex items-center gap-2">
@@ -187,32 +194,46 @@ const AssetRow: React.FC<AssetRowProps> = ({ asset, onAnalyze }) => {
           <span className="text-green-600">{formatCurrency(currentPrice)}</span>
         )}
       </td>
-      
+
       <td className="py-4 font-bold">
         {isPriceLoading || isDataLoading ? (
           <div className="animate-pulse bg-gray-200 h-4 w-24 rounded"></div>
         ) : (
-          formatCurrency(currentValue)
+          formatCurrency(marketValue)
         )}
       </td>
-      
-      <td className={`py-4 font-semibold ${getPnLColorClass(pnl)}`}>
+
+      <td className={`py-4 font-semibold ${getPnLColorClass(unrealizedPnL)}`}>
         {isPriceLoading || isDataLoading ? (
           <div className="animate-pulse bg-gray-200 h-4 w-20 rounded"></div>
         ) : (
           <div className="flex items-center gap-1">
-            {pnl >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+            {unrealizedPnL >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
             <div>
-              <div>{formatCurrency(Math.abs(pnl))}</div>
-              <div className="text-xs">({formatPercent(pnlPercent)})</div>
+              <div>{formatCurrency(Math.abs(unrealizedPnL))}</div>
+              <div className="text-xs">({formatPercent(Math.abs(unrealizedPnLPercent))})</div>
             </div>
           </div>
         )}
       </td>
-      
+
+      <td className={`py-4 font-medium ${getPnLColorClass(dayChange)}`}>
+        {isPriceLoading || isDataLoading ? (
+          <div className="animate-pulse bg-gray-200 h-4 w-20 rounded"></div>
+        ) : (
+          <div className="flex items-center gap-1">
+            {dayChange >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+            <div>
+              <div className="text-sm">{formatCurrency(Math.abs(dayChange))}</div>
+              <div className="text-xs">({formatPercent(Math.abs(dayChangePercent))})</div>
+            </div>
+          </div>
+        )}
+      </td>
+
       <td className="py-4">
         <div className="flex gap-2">
-          <button 
+          <button
             onClick={() => onAnalyze(asset.symbol)}
             disabled={!asset.symbol || asset.symbol === 'UNKNOWN'}
             className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
@@ -220,7 +241,7 @@ const AssetRow: React.FC<AssetRowProps> = ({ asset, onAnalyze }) => {
             <Brain size={14} />
             Analyze
           </button>
-          <button 
+          <button
             disabled={!asset.symbol || asset.symbol === 'UNKNOWN'}
             className="bg-gray-100 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
           >
