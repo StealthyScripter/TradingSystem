@@ -1,37 +1,37 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
-import { NextResponse } from 'next/server';
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 
 // Define which routes require authentication
 const isProtectedRoute = createRouteMatcher([
+  '/',
   '/dashboard(.*)',
   '/accounts(.*)',
   '/assets(.*)',
-  '/performance(.*)'
-]);
+  '/performance(.*)',
+  '/perfomance(.*)', // Keep existing typo for compatibility
+  '/settings(.*)',
+  '/new(.*)'
+])
 
-// Define auth routes (login/register pages)
-const isAuthRoute = createRouteMatcher([
+// Define public routes that don't require authentication
+const isPublicRoute = createRouteMatcher([
+  '/sign-in(.*)',
+  '/sign-up(.*)',
+  '/api(.*)',
   '/login',
-  '/register',
-  '/sign-in',
-  '/sign-up'
-]);
+  '/register'
+])
 
 export default clerkMiddleware(async (auth, req) => {
-  const { userId } = await auth();
-
-  // If user is not signed in and trying to access protected route
-  if (isProtectedRoute(req) && !userId) {
-    return NextResponse.redirect(new URL('/sign-in', req.url));
+  // Allow public routes
+  if (isPublicRoute(req)) {
+    return
   }
 
-  // If user is signed in and trying to access auth routes
-  if (isAuthRoute(req) && userId) {
-    return NextResponse.redirect(new URL('/dashboard', req.url));
+  // Protect all other routes
+  if (isProtectedRoute(req)) {
+    await auth.protect()
   }
-
-  return NextResponse.next();
-});
+})
 
 export const config = {
   matcher: [
@@ -40,4 +40,4 @@ export const config = {
     // Always run for API routes
     '/(api|trpc)(.*)',
   ],
-};
+}

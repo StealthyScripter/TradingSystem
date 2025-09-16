@@ -29,6 +29,7 @@ async def lifespan(app: FastAPI):
     logger.info("🚀 Starting Investment Portfolio API")
     logger.info(f"Environment: {settings.ENVIRONMENT}")
     logger.info(f"Debug mode: {settings.DEBUG}")
+    logger.info(f"Clerk Auth: {'ENABLED' if not settings.DISABLE_AUTH else 'DISABLED (Mock Mode)'}")
 
     # Check database connection
     if not check_database_connection():
@@ -52,22 +53,23 @@ async def lifespan(app: FastAPI):
 # Create FastAPI application
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    description="Investment Portfolio Management API with PostgreSQL, Real-time Market Data, and AI Analysis",
+    description="Investment Portfolio Management API with Clerk Authentication, PostgreSQL, Real-time Market Data, and AI Analysis",
     version=settings.VERSION,
     docs_url="/docs" if settings.DEBUG else None,
     redoc_url="/redoc" if settings.DEBUG else None,
     lifespan=lifespan
 )
 
+# Enhanced CORS configuration for Clerk
 @app.options("/{full_path:path}")
 async def options_handler(request: Request):
     """Handle CORS preflight requests"""
     return Response(
         status_code=200,
         headers={
-            "Access-Control-Allow-Origin": "http://localhost:3000",
+            "Access-Control-Allow-Origin": "*",  # Will be overridden by CORS middleware
             "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept, Origin",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept, Origin, x-clerk-session",
             "Access-Control-Allow-Credentials": "true",
         }
     )
@@ -76,7 +78,7 @@ async def options_handler(request: Request):
 if settings.ENVIRONMENT == "production":
     app.add_middleware(
         TrustedHostMiddleware,
-        allowed_hosts=["yourdomain.com", "*.yourdomain.com", "localhost"]
+        allowed_hosts=["yourdomain.com", "*.yourdomain.com", "localhost", "*.clerk.accounts.dev"]
     )
 
 # Compression Middleware
@@ -92,17 +94,38 @@ app.add_middleware(LoggingMiddleware)
 if not settings.DISABLE_AUTH:
     app.add_middleware(ClerkAuthMiddleware)
     logger.info("🔒 Clerk authentication ENABLED")
+    logger.info(f"   Clerk Domain: {settings.CLERK_DOMAIN}")
 else:
     logger.warning("⚠️  Authentication DISABLED - using mock user")
     logger.warning(f"   Mock User ID: {settings.MOCK_USER_ID}")
     logger.warning(f"   Mock Email: {settings.MOCK_USER_EMAIL}")
 
+# CORS Middleware - Enhanced for Clerk
+allowed_origins = settings.get_allowed_origins()
+
+# Add Clerk domains to allowed origins
+clerk_origins = [
+    f"https://{settings.CLERK_DOMAIN}",
+    "https://clerk.dev",
+    "https://accounts.dev"
+]
+allowed_origins.extend(clerk_origins)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=[
+        "*",
+        "Authorization",
+        "Content-Type",
+        "Accept",
+        "Origin",
+        "X-Requested-With",
+        "X-Clerk-Session",
+        "X-Clerk-Auth-Token"
+    ],
     expose_headers=["*"]
 )
 
@@ -117,7 +140,9 @@ def debug_cors():
         "cors_debug": {
             "environment": settings.ENVIRONMENT,
             "debug_mode": settings.DEBUG,
-            "cors_origins": ["http://localhost:3000", "http://127.0.0.1:3000"]
+            "clerk_enabled": not settings.DISABLE_AUTH,
+            "clerk_domain": settings.CLERK_DOMAIN,
+            "cors_origins": allowed_origins
         }
     }
 
@@ -162,16 +187,21 @@ def root():
     """API root endpoint with system information"""
     db_info = get_database_info()
     return {
-        "message": "Investment Portfolio MVP API",
+        "message": "Investment Portfolio MVP API with Clerk Authentication",
         "status": "running",
         "version": settings.VERSION,
         "environment": settings.ENVIRONMENT,
+        "authentication": {
+            "provider": "clerk" if not settings.DISABLE_AUTH else "mock",
+            "enabled": not settings.DISABLE_AUTH,
+            "domain": settings.CLERK_DOMAIN if not settings.DISABLE_AUTH else None
+        },
         "database": db_info,
         "features": {
             "real_time_data": True,
             "ai_analysis": bool(settings.GEMINI_API_KEY),
             "portfolio_tracking": True,
-            "authentication": "clerk",
+            "authentication": "clerk" if not settings.DISABLE_AUTH else "mock",
             "database": "postgresql"
         },
         "endpoints": {
@@ -195,9 +225,14 @@ def health_check():
             "timestamp": time.time(),
             "version": settings.VERSION,
             "environment": settings.ENVIRONMENT,
+            "authentication": {
+                "clerk_enabled": not settings.DISABLE_AUTH,
+                "domain": settings.CLERK_DOMAIN if not settings.DISABLE_AUTH else None
+            },
             "checks": {
                 "database": "healthy" if db_healthy else "unhealthy",
-                "api": "healthy"
+                "api": "healthy",
+                "auth": "clerk" if not settings.DISABLE_AUTH else "mock"
             }
         }
     except Exception as e:
@@ -223,6 +258,10 @@ def get_metrics():
         "database": DatabaseManager.get_pool_status(),
         "environment": settings.ENVIRONMENT,
         "debug": settings.DEBUG,
+        "authentication": {
+            "provider": "clerk" if not settings.DISABLE_AUTH else "mock",
+            "enabled": not settings.DISABLE_AUTH
+        },
         "timestamp": time.time()
     }
 

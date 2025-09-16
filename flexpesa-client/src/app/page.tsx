@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { SignedIn, SignedOut, useUser } from '@clerk/nextjs';
 import { portfolioAPI } from '../lib/api';
 import PortfolioSummary from '../components/PortfolioSummary';
 import { Account, Asset, PortfolioSummary as PortfolioSummaryType, AccountCreateRequest, AssetCreateRequest, PortfolioAccount } from '@/types';
@@ -11,7 +12,56 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 import Header from '@/components/Header';
 
-export default function Dashboard() {
+// Welcome component for non-authenticated users
+function WelcomePage() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <div className="max-w-7xl mx-auto px-4 py-16">
+        <div className="text-center">
+          <h1 className="text-6xl font-bold text-gray-900 mb-6">
+            📊 Investment Portfolio
+          </h1>
+          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            Real-time portfolio management with AI-powered insights. Track your investments across multiple accounts, get market analysis, and make informed decisions.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <div className="text-3xl mb-4">🔄</div>
+              <h3 className="text-xl font-semibold mb-2">Real-time Data</h3>
+              <p className="text-gray-600">Live market prices and portfolio updates</p>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <div className="text-3xl mb-4">🤖</div>
+              <h3 className="text-xl font-semibold mb-2">AI Analysis</h3>
+              <p className="text-gray-600">Smart insights and recommendations</p>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <div className="text-3xl mb-4">📈</div>
+              <h3 className="text-xl font-semibold mb-2">Multi-Account</h3>
+              <p className="text-gray-600">Manage all your investment accounts</p>
+            </div>
+          </div>
+
+          <div className="mt-12 bg-blue-50 rounded-lg p-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              Ready to start tracking your investments?
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Sign up now to access your personalized portfolio dashboard
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main Dashboard component for authenticated users
+function Dashboard() {
+  const { user, isLoaded } = useUser();
   const [portfolioData, setPortfolioData] = useState<PortfolioSummaryType | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<string>('all');
   const [loading, setLoading] = useState<boolean>(true);
@@ -113,18 +163,31 @@ export default function Dashboard() {
     }
   };
 
-  // Initial load
+  // Initial load when user is loaded
   useEffect(() => {
-    fetchPortfolioData();
-  }, []);
+    if (isLoaded && user) {
+      fetchPortfolioData();
+    }
+  }, [isLoaded, user]);
 
-  if (loading) {
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <LoadingSpinner size="xl" className="mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-700">Loading...</h2>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading && user) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
           <LoadingSpinner size="xl" className="mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-700">Loading Portfolio...</h2>
-          <p className="text-gray-500">Fetching your investment data</p>
+          <p className="text-gray-500">Welcome back, {user.firstName}!</p>
         </div>
       </div>
     );
@@ -134,7 +197,10 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-100">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
-        <Header title="Portfolio Dashboard" subtitle="Real-time portfolio management with AI-powered insights"/>
+        <Header
+          title={`Welcome back, ${user?.firstName}!`}
+          subtitle="Real-time portfolio management with AI-powered insights"
+        />
 
         {/* Error Message */}
         {error && (
@@ -147,10 +213,10 @@ export default function Dashboard() {
           />
         )}
 
-        {/* Portfolio Summary - Pass the complete PortfolioSummary object */}
+        {/* Portfolio Summary */}
         {portfolioData && (
           <PortfolioSummary
-            portfolioData={portfolioData} // Pass entire API response, not transformed object
+            portfolioData={portfolioData}
             lastUpdated={lastUpdated}
             onRefresh={handleRefreshPrices}
             isRefreshing={isRefreshing}
@@ -187,10 +253,25 @@ export default function Dashboard() {
 
         {/* Footer */}
         <div className="mt-12 text-center text-gray-500 text-sm">
-          <p>Built with Next.js + FastAPI • Real-time market data via yfinance</p>
-          <p className="mt-1">Portfolio value updates every 30 seconds</p>
+          <p>Built with Next.js + FastAPI + Clerk • Real-time market data via yfinance</p>
+          <p className="mt-1">Secure authentication powered by Clerk</p>
         </div>
       </div>
     </div>
+  );
+}
+
+// Main page component
+export default function HomePage() {
+  return (
+    <>
+      <SignedOut>
+        <WelcomePage />
+      </SignedOut>
+
+      <SignedIn>
+        <Dashboard />
+      </SignedIn>
+    </>
   );
 }
