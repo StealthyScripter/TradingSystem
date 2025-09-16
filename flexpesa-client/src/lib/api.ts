@@ -1,6 +1,7 @@
-import axios, { AxiosError } from "axios";
+// flexpesa-client/src/lib/api.ts
+import axios, { AxiosError, AxiosRequestConfig } from "axios";
 
-// ============ TYPE DEFINITIONS (matching PDF) ============
+// ============ TYPE DEFINITIONS ============
 
 interface AuthConfig {
   provider: string;
@@ -188,10 +189,6 @@ interface PortfolioSummaryStats {
   average_sharpe_ratio: number;
 }
 
-interface QuickAnalysisRequest {
-  symbols: string[];
-}
-
 interface QuickAnalysisResponse {
   analysis: Record<
     string,
@@ -294,28 +291,6 @@ interface ErrorResponse {
   timestamp?: number;
 }
 
-interface PortfolioCreate {
-  name: string;
-  type: string;
-  initial_investment: number;
-  expense_ratio?: number;
-  holdings: HoldingCreate[];
-}
-
-interface HoldingCreate {
-  symbol: string;
-  quantity: number;
-  purchase_price: number;
-  purchase_date: string;
-}
-
-interface APIResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  message?: string;
-}
-
 // ============ API CONFIGURATION ============
 
 const getApiBaseUrl = (): string => {
@@ -343,6 +318,7 @@ const getApiBaseUrl = (): string => {
 
 const API_BASE_URL = getApiBaseUrl();
 
+// Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: Number(process.env.NEXT_PUBLIC_API_TIMEOUT) || 15000,
@@ -351,12 +327,53 @@ const api = axios.create({
   validateStatus: (status) => status < 500,
 });
 
+// ============ AUTH HELPER FUNCTION ============
+
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  try {
+    // For client-side requests
+    if (typeof window !== 'undefined') {
+      const { useAuth } = await import('@clerk/nextjs');
+      const { getToken } = useAuth();
+      const token = await getToken();
+
+      return token ? {
+        'Authorization': `Bearer ${token}`,
+        'X-Clerk-Auth-Token': token
+      } : {};
+    }
+
+    // For server-side requests
+    const { auth } = await import('@clerk/nextjs/server');
+    const { getToken } = await auth();
+    const token = await getToken();
+
+    return token ? {
+      'Authorization': `Bearer ${token}`,
+      'X-Clerk-Auth-Token': token
+    } : {};
+  } catch (error) {
+    console.warn('Failed to get auth token:', error);
+    return {};
+  }
+}
+
 // ============ INTERCEPTORS ============
 
 api.interceptors.request.use(
-  (config) => {
+  async (config: AxiosRequestConfig) => {
+    // Add auth headers
+    const authHeaders = await getAuthHeaders();
+    config.headers = {
+      ...config.headers,
+      ...authHeaders
+    } as any;
+
     if (process.env.NODE_ENV === "development") {
       console.log("🌐 API Request:", config.method?.toUpperCase(), config.url);
+      if (authHeaders.Authorization) {
+        console.log("🔐 Auth: Token included");
+      }
     }
     return config;
   },
@@ -604,6 +621,34 @@ export const portfolioAPI = {
       throw handleApiError(e);
     }
   },
+};
+
+// ============ CLERK AUTH TESTING ============
+
+export const testClerkAuth = {
+  async testAuthenticatedRequest() {
+    try {
+      console.log("🧪 Testing authenticated API request...");
+      const response = await portfolioAPI.getUserProfile();
+      console.log("✅ Authenticated request successful:", response);
+      return true;
+    } catch (error) {
+      console.error("❌ Authenticated request failed:", error);
+      return false;
+    }
+  },
+
+  async testUnauthenticatedRequest() {
+    try {
+      console.log("🧪 Testing public API request...");
+      const response = await portfolioAPI.healthCheck();
+      console.log("✅ Public request successful:", response);
+      return true;
+    } catch (error) {
+      console.error("❌ Public request failed:", error);
+      return false;
+    }
+  }
 };
 
 // ============ TEST HARNESS ============
