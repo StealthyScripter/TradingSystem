@@ -25,7 +25,7 @@ class AssetBase(BaseModel):
         symbol = symbol.upper()
 
         # Check for valid characters (letters, numbers, and hyphens for crypto)
-        if not re.match(r'^[A-Z0-9\-]+$', symbol):
+        if not re.match(r'^[A-Z0-9\-\.]+$', symbol):
             raise ValueError("Symbol contains invalid characters")
 
         return symbol
