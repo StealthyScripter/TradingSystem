@@ -1,43 +1,43 @@
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
-  const authToken = request.cookies.get('auth_token');
-  const { pathname } = request.nextUrl;
+// Define which routes require authentication
+const isProtectedRoute = createRouteMatcher([
+  '/dashboard(.*)',
+  '/accounts(.*)',
+  '/assets(.*)',
+  '/performance(.*)'
+]);
 
-  // Define protected routes
-  const protectedRoutes = ['/dashboard', '/accounts', '/assets', '/performance'];
-  const authRoutes = ['/login', '/register'];
+// Define auth routes (login/register pages)
+const isAuthRoute = createRouteMatcher([
+  '/login',
+  '/register',
+  '/sign-in',
+  '/sign-up'
+]);
 
-  // Check if current path is protected
-  const isProtectedRoute = protectedRoutes.some(route =>
-    pathname.startsWith(route)
-  );
+export default clerkMiddleware(async (auth, req) => {
+  const { userId } = await auth();
 
-  const isAuthRoute = authRoutes.some(route =>
-    pathname.startsWith(route)
-  );
-
-  // Redirect to login if accessing protected route without token
-  if (isProtectedRoute && !authToken) {
-    return NextResponse.redirect(new URL('/login', request.url));
+  // If user is not signed in and trying to access protected route
+  if (isProtectedRoute(req) && !userId) {
+    return NextResponse.redirect(new URL('/sign-in', req.url));
   }
 
-  // Redirect to dashboard if accessing auth routes with token
-  if (isAuthRoute && authToken) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+  // If user is signed in and trying to access auth routes
+  if (isAuthRoute(req) && userId) {
+    return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
   return NextResponse.next();
-}
+});
 
 export const config = {
   matcher: [
-    '/dashboard/:path*',
-    '/accounts/:path*',
-    '/assets/:path*',
-    '/performance/:path*',
-    '/login',
-    '/register'
-  ]
+    // Skip Next.js internals and all static files, unless found in search params
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // Always run for API routes
+    '/(api|trpc)(.*)',
+  ],
 };
