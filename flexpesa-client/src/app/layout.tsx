@@ -9,6 +9,7 @@ import {
 } from '@clerk/nextjs'
 import { Geist, Geist_Mono } from 'next/font/google'
 import "./globals.css";
+import HamburgerMenu from "@/components/HamburgerMenu";
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -73,6 +74,7 @@ export default function RootLayout({
                           }
                         }}
                       />
+                      <HamburgerMenu />
                     </div>
                   </SignedIn>
                 </div>

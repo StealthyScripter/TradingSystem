@@ -25,96 +25,15 @@ export default function Header({title, subtitle}: HeaderProps) {
   }, []);
 
   return (
-    <div className="mb-8 flex items-center justify-between relative">
+    <div className="mb-8 flex items-center justify-between">
       {/* Title & Subtitle */}
       <div>
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">
+        <h1 className="text-xl font-bold text-gray-900">
           {title}
         </h1>
         {subtitle && <p className="text-gray-600 text-lg">
           {subtitle}
         </p>}
-      </div>
-
-      {/* Hamburger Menu */}
-      <div className="relative" ref={menuRef}>
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="p-2 rounded-md text-gray-700 hover:bg-gray-200 focus:outline-none"
-        >
-          <svg
-            className="h-6 w-6"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 6h16M4 12h16M4 18h16"
-            />
-          </svg>
-        </button>
-
-        {/* Dropdown */}
-        {isOpen && (
-          <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-            <ul className="py-2">
-              <li>
-                <Link
-                  href="/"
-                  className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Dashboard
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/accounts"
-                  className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Accounts
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/assets"
-                  className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Assets
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/settings"
-                  className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Settings
-                </Link>
-                <Link
-                  href="/perfomance"
-                  className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Perfomance
-                </Link>
-                <Link
-                  href="/new"
-                  className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-                  onClick={() => setIsOpen(false)}
-                >
-                  New
-                </Link>
-              </li>
-            </ul>
-          </div>
-        )}
       </div>
     </div>
   );

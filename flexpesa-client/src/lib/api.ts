@@ -1,5 +1,5 @@
 // flexpesa-client/src/lib/api.ts
-import axios, { AxiosError, AxiosRequestConfig } from "axios";
+import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 
 // ============ TYPE DEFINITIONS ============
 
@@ -331,10 +331,10 @@ const api = axios.create({
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
   try {
-    // For client-side requests
-    if (typeof window !== 'undefined') {
-      const { useAuth } = await import('@clerk/nextjs');
-      const { getToken } = useAuth();
+    // For server-side requests
+    if (typeof window === 'undefined') {
+      const { auth } = await import('@clerk/nextjs/server');
+      const { getToken } = await auth();
       const token = await getToken();
 
       return token ? {
@@ -343,15 +343,9 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
       } : {};
     }
 
-    // For server-side requests
-    const { auth } = await import('@clerk/nextjs/server');
-    const { getToken } = await auth();
-    const token = await getToken();
-
-    return token ? {
-      'Authorization': `Bearer ${token}`,
-      'X-Clerk-Auth-Token': token
-    } : {};
+    // For client-side requests, we'll return empty headers
+    // and let components handle auth via useAuth hook
+    return {};
   } catch (error) {
     console.warn('Failed to get auth token:', error);
     return {};
@@ -361,13 +355,12 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
 // ============ INTERCEPTORS ============
 
 api.interceptors.request.use(
-  async (config: AxiosRequestConfig) => {
+  async (config: InternalAxiosRequestConfig) => {
     // Add auth headers
     const authHeaders = await getAuthHeaders();
-    config.headers = {
-      ...config.headers,
-      ...authHeaders
-    } as any;
+
+    // Properly assign headers using Object.assign to avoid type issues
+    Object.assign(config.headers, authHeaders);
 
     if (process.env.NODE_ENV === "development") {
       console.log("🌐 API Request:", config.method?.toUpperCase(), config.url);
@@ -450,6 +443,35 @@ function handleApiError(error: unknown): APIError {
 // ============ MAIN API OBJECT ============
 
 export const portfolioAPI = {
+  // Helper method to make authenticated requests from React components
+  async makeAuthenticatedRequest<T>(
+    method: 'get' | 'post' | 'put' | 'delete',
+    url: string,
+    data?: unknown,
+    token?: string
+  ): Promise<T> {
+    const headers: Record<string, string> = {};
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+      headers['X-Clerk-Auth-Token'] = token;
+    }
+
+    const config = {
+      method,
+      url,
+      data,
+      headers
+    };
+
+    try {
+      const response = await api.request<T>(config);
+      return response.data;
+    } catch (e) {
+      throw handleApiError(e);
+    }
+  },
+
   async getAuthConfig(): Promise<AuthConfig> {
     try {
       const res = await api.get<AuthConfig>("/auth/config");
@@ -459,7 +481,10 @@ export const portfolioAPI = {
     }
   },
 
-  async getUserProfile(): Promise<UserProfile> {
+  async getUserProfile(token?: string): Promise<UserProfile> {
+    if (token) {
+      return this.makeAuthenticatedRequest<UserProfile>('get', '/auth/profile', undefined, token);
+    }
     try {
       const res = await api.get<UserProfile>("/auth/profile");
       return res.data;
@@ -486,7 +511,10 @@ export const portfolioAPI = {
     }
   },
 
-  async getAccounts(): Promise<Account[]> {
+  async getAccounts(token?: string): Promise<Account[]> {
+    if (token) {
+      return this.makeAuthenticatedRequest<Account[]>('get', '/accounts/', undefined, token);
+    }
     try {
       const res = await api.get<Account[]>("/accounts/");
       return res.data;
@@ -495,7 +523,10 @@ export const portfolioAPI = {
     }
   },
 
-  async createAccount(accountData: AccountCreate): Promise<Account> {
+  async createAccount(accountData: AccountCreate, token?: string): Promise<Account> {
+    if (token) {
+      return this.makeAuthenticatedRequest<Account>('post', '/accounts/', accountData, token);
+    }
     try {
       const res = await api.post<Account>("/accounts/", accountData);
       return res.data;
@@ -504,7 +535,10 @@ export const portfolioAPI = {
     }
   },
 
-  async addAsset(assetData: AssetCreate): Promise<Asset> {
+  async addAsset(assetData: AssetCreate, token?: string): Promise<Asset> {
+    if (token) {
+      return this.makeAuthenticatedRequest<Asset>('post', '/assets/', assetData, token);
+    }
     try {
       const res = await api.post<Asset>("/assets/", assetData);
       return res.data;
@@ -513,7 +547,10 @@ export const portfolioAPI = {
     }
   },
 
-  async getPortfolioSummary(): Promise<PortfolioSummary> {
+  async getPortfolioSummary(token?: string): Promise<PortfolioSummary> {
+    if (token) {
+      return this.makeAuthenticatedRequest<PortfolioSummary>('get', '/portfolio/summary', undefined, token);
+    }
     try {
       const res = await api.get<PortfolioSummary>("/portfolio/summary");
       return res.data;
@@ -522,7 +559,10 @@ export const portfolioAPI = {
     }
   },
 
-  async updatePrices(): Promise<UpdatePricesResponse> {
+  async updatePrices(token?: string): Promise<UpdatePricesResponse> {
+    if (token) {
+      return this.makeAuthenticatedRequest<UpdatePricesResponse>('post', '/portfolio/update-prices', undefined, token);
+    }
     try {
       const res = await api.post<UpdatePricesResponse>("/portfolio/update-prices");
       return res.data;
@@ -531,7 +571,10 @@ export const portfolioAPI = {
     }
   },
 
-  async getPortfoliosPerformance(): Promise<PerformancePortfolio[]> {
+  async getPortfoliosPerformance(token?: string): Promise<PerformancePortfolio[]> {
+    if (token) {
+      return this.makeAuthenticatedRequest<PerformancePortfolio[]>('get', '/portfolios/performance', undefined, token);
+    }
     try {
       const res = await api.get<PerformancePortfolio[]>("/portfolios/performance");
       return res.data;
@@ -540,7 +583,10 @@ export const portfolioAPI = {
     }
   },
 
-  async getPortfolioPerformanceSummary(): Promise<PortfolioSummaryStats> {
+  async getPortfolioPerformanceSummary(token?: string): Promise<PortfolioSummaryStats> {
+    if (token) {
+      return this.makeAuthenticatedRequest<PortfolioSummaryStats>('get', '/portfolios/performance/summary', undefined, token);
+    }
     try {
       const res = await api.get<PortfolioSummaryStats>("/portfolios/performance/summary");
       return res.data;
@@ -549,7 +595,10 @@ export const portfolioAPI = {
     }
   },
 
-  async getPortfolioPerformance(portfolioId: string): Promise<PerformancePortfolio> {
+  async getPortfolioPerformance(portfolioId: string, token?: string): Promise<PerformancePortfolio> {
+    if (token) {
+      return this.makeAuthenticatedRequest<PerformancePortfolio>('get', `/portfolios/${portfolioId}/performance`, undefined, token);
+    }
     try {
       const res = await api.get<PerformancePortfolio>(`/portfolios/${portfolioId}/performance`);
       return res.data;
@@ -558,9 +607,13 @@ export const portfolioAPI = {
     }
   },
 
-  async getQuickAnalysis(symbols: string[]): Promise<QuickAnalysisResponse> {
+  async getQuickAnalysis(symbols: string[], token?: string): Promise<QuickAnalysisResponse> {
+    if (symbols.length > 20) throw new APIError("Maximum 20 symbols allowed");
+
+    if (token) {
+      return this.makeAuthenticatedRequest<QuickAnalysisResponse>('post', '/analysis/quick', { symbols }, token);
+    }
     try {
-      if (symbols.length > 20) throw new APIError("Maximum 20 symbols allowed");
       const res = await api.post<QuickAnalysisResponse>("/analysis/quick", { symbols });
       return res.data;
     } catch (e) {
@@ -568,7 +621,10 @@ export const portfolioAPI = {
     }
   },
 
-  async getAssetAnalysis(symbol: string): Promise<AssetAnalysis> {
+  async getAssetAnalysis(symbol: string, token?: string): Promise<AssetAnalysis> {
+    if (token) {
+      return this.makeAuthenticatedRequest<AssetAnalysis>('post', `/analysis/asset/${symbol}`, undefined, token);
+    }
     try {
       const res = await api.post<AssetAnalysis>(`/analysis/asset/${symbol}`);
       return res.data;

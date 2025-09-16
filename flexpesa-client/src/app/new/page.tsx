@@ -488,8 +488,17 @@ const ComprehensiveInvestmentPlatform = () => {
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <Header title="New" subtitle="Multiple features"/>
+        {/* Page Header */}
+        <div className="mb-1">
+          <div className="flex justify-between items-center mb-4">
+            {/* Left: Title + Subtitle */}
+            <Header
+              title="Portfolio Performance"
+              subtitle="Advanced analytics and benchmark comparisons"
+            />
+          </div>
+        </div>
+
 
         {/* Navigation */}
         <TabNavigation />

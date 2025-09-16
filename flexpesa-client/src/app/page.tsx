@@ -11,53 +11,7 @@ import QuickActions from '../components/QuickActions';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 import Header from '@/components/Header';
-
-// Welcome component for non-authenticated users
-function WelcomePage() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="max-w-7xl mx-auto px-4 py-16">
-        <div className="text-center">
-          <h1 className="text-6xl font-bold text-gray-900 mb-6">
-            📊 Investment Portfolio
-          </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Real-time portfolio management with AI-powered insights. Track your investments across multiple accounts, get market analysis, and make informed decisions.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <div className="text-3xl mb-4">🔄</div>
-              <h3 className="text-xl font-semibold mb-2">Real-time Data</h3>
-              <p className="text-gray-600">Live market prices and portfolio updates</p>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <div className="text-3xl mb-4">🤖</div>
-              <h3 className="text-xl font-semibold mb-2">AI Analysis</h3>
-              <p className="text-gray-600">Smart insights and recommendations</p>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <div className="text-3xl mb-4">📈</div>
-              <h3 className="text-xl font-semibold mb-2">Multi-Account</h3>
-              <p className="text-gray-600">Manage all your investment accounts</p>
-            </div>
-          </div>
-
-          <div className="mt-12 bg-blue-50 rounded-lg p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Ready to start tracking your investments?
-            </h2>
-            <p className="text-gray-600 mb-6">
-              Sign up now to access your personalized portfolio dashboard
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+import LandingPage from '@/components/LandingPage';
 
 // Main Dashboard component for authenticated users
 function Dashboard() {
@@ -266,7 +220,7 @@ export default function HomePage() {
   return (
     <>
       <SignedOut>
-        <WelcomePage />
+        <LandingPage />
       </SignedOut>
 
       <SignedIn>
