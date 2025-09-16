@@ -53,7 +53,6 @@ export default function PerformancePage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <Header title="Portfolio Dashboard" subtitle="Real-time portfolio management with AI-powered insights"/>
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
               <LoadingSpinner size="xl" className="mx-auto mb-4" />
@@ -69,22 +68,25 @@ export default function PerformancePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <Header title="Portfolio Performance" subtitle="Advanced analytics and benchmark comparisons"/>
 
         {/* Page Header */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-4">
-            <div className="flex gap-3">
-              {/* Refresh Button */}
-              <button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-all duration-200 disabled:opacity-50"
-              >
-                <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
-                {refreshing ? 'Refreshing...' : 'Refresh'}
-              </button>
-            </div>
+            {/* Left: Title + Subtitle */}
+            <Header
+              title="Portfolio Performance"
+              subtitle="Advanced analytics and benchmark comparisons"
+            />
+
+            {/* Right: Refresh Button */}
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-all duration-200 disabled:opacity-50"
+            >
+              <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+              {refreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
           </div>
 
           {/* Error Message */}
@@ -107,6 +109,7 @@ export default function PerformancePage() {
             </div>
           )}
         </div>
+
 
         {/* Portfolio Grid */}
         {portfolios.length > 0 ? (
