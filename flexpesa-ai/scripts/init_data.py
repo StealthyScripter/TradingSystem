@@ -125,8 +125,13 @@ class EnhancedDatabaseInitializer:
             raise
 
     def create_comprehensive_market_data(self):
-        """Create realistic market data cache"""
+        """Create realistic market data cache with upsert logic"""
         logger.info("📊 Creating comprehensive market data...")
+
+        # Check if we should update existing data
+        existing_count = self.db.query(MarketData).count()
+        if existing_count > 0:
+            logger.info(f"   Found {existing_count} existing market data entries - will update where needed")
 
         # Comprehensive market data with realistic prices
         market_data_sets = {
@@ -200,7 +205,13 @@ class EnhancedDatabaseInitializer:
                 logger.info(f"   Creating {category.replace('_', ' ').title()}: {len(securities)} securities")
 
                 for security in securities:
+                    symbol = security["symbol"]
                     price = security["price"]
+
+                    # Check if this security already exists
+                    existing_data = self.db.query(MarketData).filter(
+                        MarketData.symbol == symbol
+                    ).first()
 
                     # Generate realistic market data
                     day_change_pct = random.uniform(-3.0, 3.0)
@@ -226,27 +237,43 @@ class EnhancedDatabaseInitializer:
                         else:
                             market_cap = random.uniform(0.3e9, 2e9)    # Small cap
 
-                    market_data = MarketData(
-                        symbol=security["symbol"],
-                        name=security["name"],
-                        current_price=price,
-                        open_price=price * random.uniform(0.98, 1.02),
-                        high_price=price * random.uniform(1.00, 1.04),
-                        low_price=price * random.uniform(0.96, 1.00),
-                        volume=volume,
-                        day_change=day_change,
-                        day_change_percent=day_change_pct,
-                        market_cap=market_cap,
-                        sector=security["sector"],
-                        industry=security["industry"],
-                        currency="USD",
-                        exchange=self._determine_exchange(security["symbol"]),
-                        asset_type=self._determine_asset_type(security["symbol"]),
-                        created_at=datetime.utcnow(),
-                        updated_at=datetime.utcnow()
-                    )
+                    if existing_data:
+                        # Update existing record
+                        existing_data.current_price = price
+                        existing_data.open_price = price * random.uniform(0.98, 1.02)
+                        existing_data.high_price = price * random.uniform(1.00, 1.04)
+                        existing_data.low_price = price * random.uniform(0.96, 1.00)
+                        existing_data.volume = volume
+                        existing_data.day_change = day_change
+                        existing_data.day_change_percent = day_change_pct
+                        existing_data.market_cap = market_cap
+                        existing_data.updated_at = datetime.utcnow()
+                        logger.debug(f"      Updated {symbol}")
+                    else:
+                        # Create new record
+                        market_data = MarketData(
+                            symbol=symbol,
+                            name=security["name"],
+                            current_price=price,
+                            open_price=price * random.uniform(0.98, 1.02),
+                            high_price=price * random.uniform(1.00, 1.04),
+                            low_price=price * random.uniform(0.96, 1.00),
+                            volume=volume,
+                            day_change=day_change,
+                            day_change_percent=day_change_pct,
+                            market_cap=market_cap,
+                            sector=security["sector"],
+                            industry=security["industry"],
+                            currency="USD",
+                            exchange=self._determine_exchange(security["symbol"]),
+                            asset_type=self._determine_asset_type(security["symbol"]),
+                            created_at=datetime.utcnow(),
+                            updated_at=datetime.utcnow()
+                        )
 
-                    self.db.add(market_data)
+                        self.db.add(market_data)
+                        logger.debug(f"      Created {symbol}")
+
                     total_created += 1
 
             # Add benchmark indices
@@ -258,31 +285,56 @@ class EnhancedDatabaseInitializer:
                 {"symbol": "^VIX", "name": "CBOE Volatility Index", "price": 18.50},
             ]
 
+            logger.info(f"   Creating/updating benchmarks: {len(benchmarks)} indices")
+
             for benchmark in benchmarks:
-                market_data = MarketData(
-                    symbol=benchmark["symbol"],
-                    name=benchmark["name"],
-                    current_price=benchmark["price"],
-                    open_price=benchmark["price"] * random.uniform(0.999, 1.001),
-                    high_price=benchmark["price"] * random.uniform(1.000, 1.005),
-                    low_price=benchmark["price"] * random.uniform(0.995, 1.000),
-                    volume=0,
-                    day_change=benchmark["price"] * random.uniform(-0.02, 0.02),
-                    day_change_percent=random.uniform(-2.0, 2.0),
-                    sector="Financial",
-                    industry="Index",
-                    currency="USD",
-                    exchange="INDEX",
-                    asset_type="index"
-                )
-                self.db.add(market_data)
+                symbol = benchmark["symbol"]
+                price = benchmark["price"]
+
+                existing_data = self.db.query(MarketData).filter(
+                    MarketData.symbol == symbol
+                ).first()
+
+                if existing_data:
+                    # Update existing benchmark
+                    existing_data.current_price = price
+                    existing_data.open_price = price * random.uniform(0.999, 1.001)
+                    existing_data.high_price = price * random.uniform(1.000, 1.005)
+                    existing_data.low_price = price * random.uniform(0.995, 1.000)
+                    existing_data.day_change = price * random.uniform(-0.02, 0.02)
+                    existing_data.day_change_percent = random.uniform(-2.0, 2.0)
+                    existing_data.updated_at = datetime.utcnow()
+                    logger.debug(f"      Updated benchmark {symbol}")
+                else:
+                    # Create new benchmark
+                    market_data = MarketData(
+                        symbol=symbol,
+                        name=benchmark["name"],
+                        current_price=price,
+                        open_price=price * random.uniform(0.999, 1.001),
+                        high_price=price * random.uniform(1.000, 1.005),
+                        low_price=price * random.uniform(0.995, 1.000),
+                        volume=0,
+                        day_change=price * random.uniform(-0.02, 0.02),
+                        day_change_percent=random.uniform(-2.0, 2.0),
+                        sector="Financial",
+                        industry="Index",
+                        currency="USD",
+                        exchange="INDEX",
+                        asset_type="index"
+                    )
+                    self.db.add(market_data)
+                    logger.debug(f"      Created benchmark {symbol}")
+
                 total_created += 1
 
             self.db.commit()
-            logger.info(f"✅ Created {total_created} market data entries")
+            logger.info(f"✅ Created/updated {total_created} market data entries")
 
         except Exception as e:
             logger.error(f"❌ Failed to create market data: {e}")
+            if "duplicate key" in str(e).lower() or "unique constraint" in str(e).lower():
+                logger.info("💡 TIP: Use --clear-existing flag to replace existing data")
             self.db.rollback()
             raise
 
@@ -682,6 +734,8 @@ class EnhancedDatabaseInitializer:
 ║  3. Test portfolio API:   http://localhost:8000/api/v1/portfolio/summary    ║
 ║  4. Update prices:        POST /api/v1/portfolio/update-prices              ║
 {"║  5. Configure Clerk:      Set DISABLE_AUTH=false in .env                    ║" if settings.DISABLE_AUTH else ""}
+║                                                                              ║
+║  🔄 To refresh all data:  python scripts/init_data.py --clear-existing      ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
 
@@ -739,11 +793,20 @@ async def main():
     """Main initialization function with async support"""
     import argparse
 
-    parser = argparse.ArgumentParser(description='Enhanced Investment Portfolio Database Initialization')
+    parser = argparse.ArgumentParser(
+        description='Enhanced Investment Portfolio Database Initialization',
+        epilog='''
+Examples:
+  python scripts/init_data.py                    # Update existing data safely
+  python scripts/init_data.py --clear-existing   # Fresh start (clears all data)
+  python scripts/init_data.py --mode minimal     # Minimal test data only
+  python scripts/init_data.py --production       # Production schema only
+        '''
+    )
     parser.add_argument('--clear-existing', action='store_true',
-                       help='Clear existing data before initialization')
+                       help='Clear existing data before initialization (DESTRUCTIVE)')
     parser.add_argument('--mode', choices=['minimal', 'demo', 'comprehensive'],
-                       default='demo', help='Initialization mode')
+                       default='demo', help='Initialization mode (default: demo)')
     parser.add_argument('--production', action='store_true',
                        help='Production mode (clean schema only)')
 
@@ -754,6 +817,13 @@ async def main():
         mode = "production"
     else:
         mode = args.mode
+
+    if args.clear_existing:
+        logger.warning("⚠️  --clear-existing flag detected - ALL existing data will be removed!")
+        response = input("Are you sure you want to clear all existing data? (yes/no): ")
+        if response.lower() != 'yes':
+            logger.info("Operation cancelled by user")
+            return 0
 
     initializer = EnhancedDatabaseInitializer(mode=mode)
     success = await initializer.run_initialization(clear_existing=args.clear_existing)
