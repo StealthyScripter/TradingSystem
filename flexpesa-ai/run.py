@@ -52,7 +52,7 @@ if __name__ == "__main__":
     host = os.getenv("HOST", "0.0.0.0")
 
     print(f"🚀 Starting FastAPI server on {host}:{port}")
-    print(f"📊 Environment: {os.getenv('ENVIRONMENT', 'development')}")
+    print(f"Environment: {os.getenv('ENVIRONMENT', 'development')}")
     print(f"🔧 Debug mode: {os.getenv('DEBUG', 'true')}")
 
     uvicorn.run(
@@ -62,4 +62,3 @@ if __name__ == "__main__":
         reload=os.getenv('DEBUG', 'true').lower() == 'true',
         log_level=os.getenv('LOG_LEVEL', 'info').lower()
     )
-    

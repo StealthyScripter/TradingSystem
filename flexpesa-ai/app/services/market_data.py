@@ -336,7 +336,7 @@ class MarketDataService:
     def get_performance_data(symbols: List[str], period: str = "6mo") -> pd.DataFrame:
         """Get historical performance data with error handling"""
         try:
-            logging.info(f"📊 Fetching {period} performance data for {symbols}")
+            logging.info(f"Fetching {period} performance data for {symbols}")
             data = yf.download(symbols, period=period, auto_adjust=True, progress=False)
 
             if 'Close' in data.columns:

@@ -266,7 +266,7 @@ class PortfolioService:
                 "timestamp": datetime.utcnow().isoformat()
             }
 
-            logging.info(f"📊 Price update complete: {updated_count}/{len(assets)} assets updated in {duration:.2f}s")
+            logging.info(f" Price update complete: {updated_count}/{len(assets)} assets updated in {duration:.2f}s")
             return result
 
         except Exception as e:
