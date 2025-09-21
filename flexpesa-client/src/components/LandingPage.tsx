@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { Logo } from './Logo';
+
+import Link from 'next/link';
 import { TrendingUp, Shield, Brain, Zap, BarChart3, Users, ArrowRight, Check, Star, Activity, DollarSign, Clock, Globe, ChevronDown } from 'lucide-react';
 
 const LandingPage = () => {
@@ -83,58 +86,6 @@ const LandingPage = () => {
     { number: "< 100ms", label: "Data Latency" }
   ];
 
-  const pricingPlans = [
-    {
-      name: "Professional",
-      price: "$29",
-      period: "/month",
-      description: "Perfect for individual investors and advisors",
-      features: [
-        "Up to 5 connected accounts",
-        "Real-time market data",
-        "Basic AI analysis",
-        "Performance tracking",
-        "Mobile app access",
-        "Email support"
-      ],
-      popular: false
-    },
-    {
-      name: "Enterprise",
-      price: "$99",
-      period: "/month",
-      description: "Advanced features for wealth management firms",
-      features: [
-        "Unlimited connected accounts",
-        "Advanced AI recommendations",
-        "Custom risk modeling",
-        "White-label options",
-        "API access",
-        "Dedicated support",
-        "Advanced analytics",
-        "Team collaboration tools"
-      ],
-      popular: true
-    },
-    {
-      name: "Institution",
-      price: "Custom",
-      period: "",
-      description: "Tailored solutions for large institutions",
-      features: [
-        "Custom integrations",
-        "Dedicated infrastructure",
-        "Compliance reporting",
-        "Advanced security",
-        "24/7 support",
-        "Training & onboarding",
-        "Custom AI models",
-        "Regulatory compliance"
-      ],
-      popular: false
-    }
-  ];
-
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
@@ -142,17 +93,15 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                <BarChart3 className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-gray-900">PortfolioAI</span>
+              <Logo />
+              <span className="text-xl font-bold text-gray-900">FlexPesaAi</span>
             </div>
 
             <div className="hidden md:flex items-center space-x-8">
               <a href="#features" className="text-gray-600 hover:text-gray-900 transition-colors">Features</a>
               <a href="#analytics" className="text-gray-600 hover:text-gray-900 transition-colors">Analytics</a>
-              <a href="#pricing" className="text-gray-600 hover:text-gray-900 transition-colors">Pricing</a>
-              <a href="#security" className="text-gray-600 hover:text-gray-900 transition-colors">Security</a>
+              <Link href="/pricing" className="text-gray-600 hover:text-gray-900 transition-colors">Pricing</Link>
+              <Link href="/security" className="text-gray-600 hover:text-gray-900 transition-colors">Security</Link>
             </div>
 
             <div className="flex items-center space-x-4">
@@ -188,14 +137,18 @@ const LandingPage = () => {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                <button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center group">
-                  Start Your Free Trial
-                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </button>
-                <button className="border-2 border-gray-300 text-gray-700 px-8 py-4 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 flex items-center justify-center">
-                  Watch Demo
-                  <ChevronDown className="ml-2 w-5 h-5" />
-                </button>
+                <Link href="/pricing">
+                  <button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center group">
+                    Start Your Free Trial
+                    <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                </Link>
+                <Link href="/contact">
+                  <button className="border-2 border-gray-300 text-gray-700 px-8 py-4 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 flex items-center justify-center">
+                    Watch Demo
+                    <ChevronDown className="ml-2 w-5 h-5" />
+                  </button>
+                </Link>
               </div>
 
               <div className="flex items-center space-x-6 text-sm text-gray-500">
@@ -353,15 +306,19 @@ const LandingPage = () => {
             Ready to transform your investment approach?
           </h2>
           <p className="text-xl text-blue-100 mb-8">
-            Join thousands of investors who trust PortfolioAI to manage their wealth intelligently.
+            Join thousands of investors who trust FlexPesaAi to manage their wealth intelligently.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-white text-blue-600 px-8 py-4 rounded-lg hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl font-medium">
-              Start Your Free Trial
-            </button>
-            <button className="border-2 border-white text-white px-8 py-4 rounded-lg hover:bg-white hover:text-blue-600 transition-all duration-200 font-medium">
-              Schedule a Demo
-            </button>
+            <Link href="/pricing">
+              <button className="bg-white text-blue-600 px-8 py-4 rounded-lg hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl font-medium">
+                Start Your Free Trial
+              </button>
+            </Link>
+            <Link href="/contact">
+              <button className="border-2 border-white text-white px-8 py-4 rounded-lg hover:bg-white hover:text-blue-600 transition-all duration-200 font-medium">
+                Schedule a Demo
+              </button>
+            </Link>
           </div>
         </div>
       </section>
@@ -375,7 +332,7 @@ const LandingPage = () => {
                 <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
                   <BarChart3 className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-xl font-bold">PortfolioAI</span>
+                <span className="text-xl font-bold">FlexPesaAi</span>
               </div>
               <p className="text-gray-400 mb-6 max-w-md">
                 Professional investment management powered by artificial intelligence.
@@ -394,26 +351,26 @@ const LandingPage = () => {
             <div>
               <h3 className="font-semibold mb-4">Product</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">Features</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Analytics</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Security</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">API</a></li>
+                <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
+                <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
+                <li><Link href="/security" className="hover:text-white transition-colors">Security</Link></li>
+                <li><Link href="/api-docs" className="hover:text-white transition-colors">API</Link></li>
               </ul>
             </div>
 
             <div>
               <h3 className="font-semibold mb-4">Support</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">Documentation</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Help Center</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Contact Us</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Status</a></li>
+                <li><Link href="/docs" className="hover:text-white transition-colors">Documentation</Link></li>
+                <li><Link href="/help" className="hover:text-white transition-colors">Help Center</Link></li>
+                <li><Link href="/contact" className="hover:text-white transition-colors">Contact Us</Link></li>
+                <li><Link href="/status" className="hover:text-white transition-colors">Status</Link></li>
               </ul>
             </div>
           </div>
 
           <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 PortfolioAI. All rights reserved. | Privacy Policy | Terms of Service</p>
+            <p>&copy; 2024 FlexPesaAi. All rights reserved. | <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link> | <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link></p>
           </div>
         </div>
       </footer>
