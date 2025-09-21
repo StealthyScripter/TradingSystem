@@ -10,6 +10,7 @@ import {
 import { Geist, Geist_Mono } from 'next/font/google'
 import "./globals.css";
 import HamburgerMenu from "@/components/HamburgerMenu";
+import { Logo } from "@/components/Logo";
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -42,7 +43,7 @@ export default function RootLayout({
                 {/* Logo */}
                 <div className="flex items-center">
                   <h1 className="text-xl font-bold text-gray-900">
-                    📊 Portfolio Dashboard
+                    <Logo /> Portfolio Dashboard
                   </h1>
                 </div>
 
