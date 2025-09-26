@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { SignInButton, SignUpButton } from '@clerk/nextjs';
 import { Logo } from './Logo';
-
 import Link from 'next/link';
 import { TrendingUp, Shield, Brain, Zap, BarChart3, Users, ArrowRight, Check, Star, Activity, DollarSign, Clock, Globe, ChevronDown } from 'lucide-react';
 
@@ -105,12 +105,16 @@ const LandingPage = () => {
             </div>
 
             <div className="flex items-center space-x-4">
-              <button className="text-gray-600 hover:text-gray-900 transition-colors">
-                Sign In
-              </button>
-              <button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-2 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl">
-                Start Free Trial
-              </button>
+              <SignInButton mode="modal">
+                <button className="text-gray-600 hover:text-gray-900 transition-colors font-medium">
+                  Sign In
+                </button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-2 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl font-medium">
+                  Start Free Trial
+                </button>
+              </SignUpButton>
             </div>
           </div>
         </div>
@@ -137,15 +141,15 @@ const LandingPage = () => {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                <Link href="/pricing">
-                  <button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center group">
+                <SignUpButton mode="modal">
+                  <button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center group font-medium">
                     Start Your Free Trial
                     <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </button>
-                </Link>
+                </SignUpButton>
                 <Link href="/contact">
-                  <button className="border-2 border-gray-300 text-gray-700 px-8 py-4 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 flex items-center justify-center">
-                    Watch Demo
+                  <button className="border-2 border-gray-300 text-gray-700 px-8 py-4 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 flex items-center justify-center font-medium">
+                    Schedule Demo
                     <ChevronDown className="ml-2 w-5 h-5" />
                   </button>
                 </Link>
@@ -263,8 +267,48 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* Analytics Section */}
+      <section id="analytics" className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Advanced Analytics & AI Insights
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Get professional-grade analysis and recommendations powered by cutting-edge AI
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="bg-white rounded-xl p-6 shadow-lg">
+              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mb-4">
+                <Brain className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Sentiment Analysis</h3>
+              <p className="text-gray-600 text-sm">AI-powered analysis of market sentiment from news and social media</p>
+            </div>
+
+            <div className="bg-white rounded-xl p-6 shadow-lg">
+              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center mb-4">
+                <BarChart3 className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Risk Assessment</h3>
+              <p className="text-gray-600 text-sm">Comprehensive risk analysis with Sharpe ratio and beta calculations</p>
+            </div>
+
+            <div className="bg-white rounded-xl p-6 shadow-lg">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center mb-4">
+                <TrendingUp className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Performance Tracking</h3>
+              <p className="text-gray-600 text-sm">Real-time performance monitoring with benchmark comparisons</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Testimonials Section */}
-      <section className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+      <section className="py-20 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
@@ -275,7 +319,7 @@ const LandingPage = () => {
             </p>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-xl p-8 lg:p-12">
+          <div className="bg-white rounded-2xl shadow-xl p-8 lg:p-12 border border-gray-100">
             <div className="text-center">
               <div className="flex justify-center mb-4">
                 {[...Array(testimonials[currentTestimonial].rating)].map((_, i) => (
@@ -291,7 +335,9 @@ const LandingPage = () => {
                 <div className="text-center">
                   <div className="font-semibold text-gray-900">{testimonials[currentTestimonial].name}</div>
                   <div className="text-gray-600">{testimonials[currentTestimonial].role}</div>
-                  <div className="text-blue-600 font-medium">{testimonials[currentTestimonial].company}</div>
+                  {testimonials[currentTestimonial].company && (
+                    <div className="text-blue-600 font-medium">{testimonials[currentTestimonial].company}</div>
+                  )}
                 </div>
               </div>
             </div>
@@ -309,11 +355,11 @@ const LandingPage = () => {
             Join thousands of investors who trust FlexPesaAi to manage their wealth intelligently.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/pricing">
+            <SignUpButton mode="modal">
               <button className="bg-white text-blue-600 px-8 py-4 rounded-lg hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl font-medium">
                 Start Your Free Trial
               </button>
-            </Link>
+            </SignUpButton>
             <Link href="/contact">
               <button className="border-2 border-white text-white px-8 py-4 rounded-lg hover:bg-white hover:text-blue-600 transition-all duration-200 font-medium">
                 Schedule a Demo
@@ -329,9 +375,7 @@ const LandingPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                  <BarChart3 className="w-5 h-5 text-white" />
-                </div>
+                <Logo />
                 <span className="text-xl font-bold">FlexPesaAi</span>
               </div>
               <p className="text-gray-400 mb-6 max-w-md">
