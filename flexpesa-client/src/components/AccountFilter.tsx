@@ -1,16 +1,16 @@
 import React from 'react';
-import { PortfolioAccount } from '@/types'; // Use PortfolioAccount instead of Account
+import { PortfolioAccount } from '@/types';
 import { getAccountIcon } from '../lib/utils';
 
 interface AccountFilterProps {
-  accounts: PortfolioAccount[]; // Updated type
+  accounts: PortfolioAccount[];
   selectedAccount: string;
   onAccountSelect: (accountId: string) => void;
 }
 
 const AccountFilter: React.FC<AccountFilterProps> = ({ accounts, selectedAccount, onAccountSelect }) => {
   return (
-    <div className="bg-white rounded-lg shadow-lg p-4 mb-6">
+    <div className="card">
       <div className="flex flex-wrap gap-2">
         <button
           onClick={() => onAccountSelect('all')}

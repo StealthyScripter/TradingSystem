@@ -126,10 +126,10 @@ function Dashboard() {
 
   if (!isLoaded) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="page-container flex items-center justify-center">
         <div className="text-center">
           <LoadingSpinner size="xl" className="mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-700">Loading...</h2>
+          <h2 className="section-title">Loading...</h2>
         </div>
       </div>
     );
@@ -137,19 +137,19 @@ function Dashboard() {
 
   if (loading && user) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="page-container flex items-center justify-center">
         <div className="text-center">
           <LoadingSpinner size="xl" className="mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-700">Loading Portfolio...</h2>
-          <p className="text-gray-500">Welcome back, {user.firstName}!</p>
+          <h2 className="section-title">Loading Portfolio...</h2>
+          <p className="section-subtitle">Welcome back, {user.firstName}!</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="page-container">
+      <div className="content-wrapper">
         {/* Header */}
         <Header
           title={`Welcome back, ${user?.firstName}!`}
@@ -158,51 +158,61 @@ function Dashboard() {
 
         {/* Error Message */}
         {error && (
-          <ErrorMessage
-            message={error}
-            onRetry={() => {
-              setError(null);
-              fetchPortfolioData();
-            }}
-          />
+          <div className="section-spacing">
+            <ErrorMessage
+              message={error}
+              onRetry={() => {
+                setError(null);
+                fetchPortfolioData();
+              }}
+            />
+          </div>
         )}
 
         {/* Portfolio Summary */}
         {portfolioData && (
-          <PortfolioSummary
-            portfolioData={portfolioData}
-            lastUpdated={lastUpdated}
-            onRefresh={handleRefreshPrices}
-            isRefreshing={isRefreshing}
-          />
+          <div className="section-spacing">
+            <PortfolioSummary
+              portfolioData={portfolioData}
+              lastUpdated={lastUpdated}
+              onRefresh={handleRefreshPrices}
+              isRefreshing={isRefreshing}
+            />
+          </div>
         )}
 
         {/* Account Filter */}
         {portfolioData?.accounts && (
-          <AccountFilter
-            accounts={portfolioData.accounts}
-            selectedAccount={selectedAccount}
-            onAccountSelect={setSelectedAccount}
-          />
+          <div className="section-spacing">
+            <AccountFilter
+              accounts={portfolioData.accounts}
+              selectedAccount={selectedAccount}
+              onAccountSelect={setSelectedAccount}
+            />
+          </div>
         )}
 
         {/* Quick Actions */}
         {portfolioData?.accounts && (
-          <QuickActions
-            accounts={portfolioData.accounts}
-            onAddAccount={handleAddAccount}
-            onAddAsset={handleAddAsset}
-            onRunAnalysis={handleRunAnalysis}
-          />
+          <div className="section-spacing">
+            <QuickActions
+              accounts={portfolioData.accounts}
+              onAddAccount={handleAddAccount}
+              onAddAsset={handleAddAsset}
+              onRunAnalysis={handleRunAnalysis}
+            />
+          </div>
         )}
 
         {/* Asset Table */}
         {portfolioData?.accounts && (
-          <AssetTable
-            accounts={portfolioData.accounts}
-            selectedAccount={selectedAccount}
-            onAnalyze={handleAnalyze}
-          />
+          <div className="section-spacing">
+            <AssetTable
+              accounts={portfolioData.accounts}
+              selectedAccount={selectedAccount}
+              onAnalyze={handleAnalyze}
+            />
+          </div>
         )}
 
         {/* Footer */}

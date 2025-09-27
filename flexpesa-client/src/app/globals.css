@@ -7,25 +7,160 @@
     font-feature-settings: "cv11", "ss01";
     font-variation-settings: "opsz" 32;
   }
-  
+
   body {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background-color: #f8fafc;
-    color: #1f2937;
+    background-color: #f9fafb;
+    color: #111827;
   }
 }
 
 @layer components {
-  /* Custom component styles */
-  .btn-primary {
-    @apply bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors;
+  /* Design System - Typography */
+  .page-title {
+    @apply text-3xl font-bold text-gray-900;
   }
 
+  .page-subtitle {
+    @apply text-lg text-gray-600;
+  }
+
+  .section-title {
+    @apply text-2xl font-bold text-gray-900;
+  }
+
+  .section-subtitle {
+    @apply text-base text-gray-600;
+  }
+
+  .card-title {
+    @apply text-xl font-semibold text-gray-900;
+  }
+
+  .card-subtitle {
+    @apply text-sm text-gray-600;
+  }
+
+  /* Design System - Layout */
+  .page-container {
+    @apply min-h-screen bg-gray-50;
+  }
+
+  .content-wrapper {
+    @apply max-w-7xl mx-auto px-4 py-8;
+  }
+
+  .page-header {
+    @apply mb-8;
+  }
+
+  .section-spacing {
+    @apply mb-8;
+  }
+
+  .subsection-spacing {
+    @apply mb-6;
+  }
+
+  /* Design System - Cards */
   .card {
-    @apply bg-white rounded-lg shadow-lg p-6;
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6;
   }
 
-  /* Fix for potential NaN display issues */
+  .card-compact {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-4;
+  }
+
+  .card-large {
+    @apply bg-white rounded-lg shadow-lg border border-gray-200 p-8;
+  }
+
+  /* Design System - Buttons */
+  .btn-primary {
+    @apply bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors font-medium;
+  }
+
+  .btn-success {
+    @apply bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium;
+  }
+
+  .btn-large {
+    @apply px-6 py-3 text-lg;
+  }
+
+  .btn-small {
+    @apply px-3 py-1 text-sm;
+  }
+
+  /* Design System - Status Colors */
+  .status-positive {
+    @apply text-green-600;
+  }
+
+  .status-negative {
+    @apply text-red-600;
+  }
+
+  .status-neutral {
+    @apply text-gray-600;
+  }
+
+  .bg-status-positive {
+    @apply bg-green-50 text-green-800 border-green-200;
+  }
+
+  .bg-status-negative {
+    @apply bg-red-50 text-red-800 border-red-200;
+  }
+
+  .bg-status-neutral {
+    @apply bg-gray-50 text-gray-800 border-gray-200;
+  }
+
+  /* Design System - Form Elements */
+  .form-input {
+    @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+  }
+
+  .form-label {
+    @apply block text-sm font-medium text-gray-700 mb-2;
+  }
+
+  .form-error {
+    @apply text-red-600 text-sm mt-1;
+  }
+
+  /* Design System - Metrics Cards */
+  .metric-card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center;
+  }
+
+  .metric-value {
+    @apply text-3xl font-bold text-gray-900;
+  }
+
+  .metric-label {
+    @apply text-sm text-gray-600 mt-2;
+  }
+
+  /* Design System - Navigation */
+  .nav-link {
+    @apply text-gray-600 hover:text-gray-900 transition-colors font-medium;
+  }
+
+  .nav-link-active {
+    @apply text-blue-600 font-semibold;
+  }
+
+  /* Legacy components for backward compatibility */
   .currency::before {
     content: "$";
   }
@@ -38,23 +173,20 @@
     content: "$";
   }
 
-  /* Loading state styles */
   .loading {
     @apply animate-pulse bg-gray-200;
   }
 
-  /* Error state styles */
   .error-text {
     @apply text-red-600 font-medium;
   }
 
-  /* Success state styles */
   .success-text {
     @apply text-green-600 font-medium;
   }
 }
 
-/* Custom animations */
+/* Animations */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }

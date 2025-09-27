@@ -174,12 +174,11 @@ export default function AssetsPage() {
     if (isLoaded && isSignedIn) {
       fetchPortfolioData();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoaded, isSignedIn]);
 
   if (!isLoaded || !isSignedIn) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="page-container flex items-center justify-center">
         <LoadingSpinner size="xl" />
       </div>
     );
@@ -187,10 +186,10 @@ export default function AssetsPage() {
 
   if (loading && !portfolioData) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="page-container flex items-center justify-center">
         <div className="text-center">
           <LoadingSpinner size="xl" className="mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-700">Loading Assets...</h2>
+          <h2 className="section-title">Loading Assets...</h2>
         </div>
       </div>
     );
@@ -201,53 +200,52 @@ export default function AssetsPage() {
   const assetTypes = getUniqueAssetTypes();
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex justify-between items-start mb-8">
-          <Header
-            title="Asset Portfolio"
-            subtitle="Advanced asset analytics and performance tracking"
-          />
-          <div className="flex gap-3">
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
-            >
-              <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
-              {refreshing ? 'Refreshing...' : 'Refresh'}
-            </button>
-            <button className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors">
-              <Download size={16} />
-              Export
-            </button>
-            <button
-              onClick={() => setShowAddForm(true)}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-            >
-              <Plus size={16} />
-              Add Asset
-            </button>
-          </div>
-        </div>
+    <div className="page-container">
+      <div className="content-wrapper">
+        <Header
+          title="Asset Portfolio"
+          subtitle="Advanced asset analytics and performance tracking"
+        >
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="btn-secondary flex items-center gap-2"
+          >
+            <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+          <button className="btn-secondary flex items-center gap-2">
+            <Download size={16} />
+            Export
+          </button>
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="btn-primary flex items-center gap-2"
+          >
+            <Plus size={16} />
+            Add Asset
+          </button>
+        </Header>
 
         {error && (
-          <ErrorMessage
-            message={error}
-            onRetry={() => {
-              setError(null);
-              fetchPortfolioData();
-            }}
-          />
+          <div className="section-spacing">
+            <ErrorMessage
+              message={error}
+              onRetry={() => {
+                setError(null);
+                fetchPortfolioData();
+              }}
+            />
+          </div>
         )}
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-blue-500">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 section-spacing">
+          <div className="card border-l-4 border-blue-500">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Asset Value</p>
-                <p className="text-2xl font-bold text-gray-900">{formatCurrency(totals.totalValue)}</p>
+                <p className="card-subtitle">Total Asset Value</p>
+                <p className="metric-value">{formatCurrency(totals.totalValue)}</p>
               </div>
               <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
                 <BarChart3 className="h-6 w-6 text-blue-600" />
@@ -255,11 +253,11 @@ export default function AssetsPage() {
             </div>
           </div>
 
-          <div className={`bg-white rounded-lg shadow-lg p-6 border-l-4 ${totals.totalPnL >= 0 ? 'border-green-500' : 'border-red-500'}`}>
+          <div className={`card border-l-4 ${totals.totalPnL >= 0 ? 'border-green-500' : 'border-red-500'}`}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Unrealized P&L</p>
-                <p className={`text-2xl font-bold ${totals.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <p className="card-subtitle">Unrealized P&L</p>
+                <p className={`metric-value ${totals.totalPnL >= 0 ? 'status-positive' : 'status-negative'}`}>
                   {formatCurrency(totals.totalPnL)}
                 </p>
               </div>
@@ -272,11 +270,11 @@ export default function AssetsPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-purple-500">
+          <div className="card border-l-4 border-purple-500">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Holdings</p>
-                <p className="text-2xl font-bold text-gray-900">{totals.totalAssets}</p>
+                <p className="card-subtitle">Total Holdings</p>
+                <p className="metric-value">{totals.totalAssets}</p>
               </div>
               <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
                 <BarChart3 className="h-6 w-6 text-purple-600" />
@@ -284,11 +282,11 @@ export default function AssetsPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-green-500">
+          <div className="card border-l-4 border-green-500">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Win Rate</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="card-subtitle">Win Rate</p>
+                <p className="metric-value">
                   {totals.totalAssets > 0 ? Math.round((totals.winners / totals.totalAssets) * 100) : 0}%
                 </p>
               </div>
@@ -300,7 +298,7 @@ export default function AssetsPage() {
         </div>
 
         {/* Filters and Search */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
+        <div className="card section-spacing">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -309,14 +307,14 @@ export default function AssetsPage() {
                 placeholder="Search assets..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="form-input pl-10"
               />
             </div>
 
             <select
               value={filterAccount}
               onChange={(e) => setFilterAccount(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="form-input"
             >
               <option value="all">All Accounts</option>
               {portfolioData?.accounts.map(account => (
@@ -327,7 +325,7 @@ export default function AssetsPage() {
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="form-input"
             >
               <option value="all">All Types</option>
               {assetTypes.map(type => (
@@ -339,7 +337,7 @@ export default function AssetsPage() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="form-input flex-1"
               >
                 <option value="value">Sort by Value</option>
                 <option value="symbol">Sort by Symbol</option>
@@ -358,9 +356,9 @@ export default function AssetsPage() {
         </div>
 
         {/* Assets Table */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">
+        <div className="card section-spacing">
+          <div className="flex items-center justify-between subsection-spacing">
+            <h3 className="card-title">
               Assets ({filteredAssets.length} of {totals.totalAssets})
             </h3>
           </div>
@@ -393,7 +391,7 @@ export default function AssetsPage() {
                           <div>
                             <div className="font-semibold text-gray-900">{asset.symbol}</div>
                             {asset.name && (
-                              <div className="text-sm text-gray-500">{asset.name}</div>
+                              <div className="card-subtitle">{asset.name}</div>
                             )}
                             <div className="text-xs text-gray-400">
                               {formatDate(asset.last_updated)}
@@ -406,7 +404,7 @@ export default function AssetsPage() {
                           <span className="text-lg">{getAccountIcon(asset.accountName)}</span>
                           <div>
                             <div className="font-medium text-gray-900">{asset.accountName}</div>
-                            <div className="text-sm text-gray-500 capitalize">{asset.accountType}</div>
+                            <div className="card-subtitle capitalize">{asset.accountType}</div>
                           </div>
                         </div>
                       </td>
@@ -419,7 +417,7 @@ export default function AssetsPage() {
                       <td className="px-6 py-4 text-gray-900">
                         <div className="font-medium">{formatCurrency(asset.current_price)}</div>
                         {asset.day_change && (
-                          <div className={`text-sm flex items-center gap-1 ${asset.day_change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          <div className={`text-sm flex items-center gap-1 ${asset.day_change >= 0 ? 'status-positive' : 'status-negative'}`}>
                             {asset.day_change >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                             {formatCurrency(Math.abs(asset.day_change))} ({formatPercent(Math.abs(asset.day_change_percent || 0))})
                           </div>
@@ -429,7 +427,7 @@ export default function AssetsPage() {
                         {formatCurrency(asset.value || asset.market_value)}
                       </td>
                       <td className="px-6 py-4">
-                        <div className={`font-semibold ${(asset.pnl || asset.unrealized_pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        <div className={`font-semibold ${(asset.pnl || asset.unrealized_pnl || 0) >= 0 ? 'status-positive' : 'status-negative'}`}>
                           <div className="flex items-center gap-1">
                             {(asset.pnl || asset.unrealized_pnl || 0) >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
                             {formatCurrency(Math.abs(asset.pnl || asset.unrealized_pnl || 0))}
@@ -478,13 +476,13 @@ export default function AssetsPage() {
           ) : (
             <div className="text-center py-12">
               <BarChart3 className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="card-title mb-2">
                 {searchTerm || filterAccount !== 'all' || filterType !== 'all'
                   ? 'No assets match your filters'
                   : 'No assets found'
                 }
               </h3>
-              <p className="text-gray-600 mb-6">
+              <p className="card-subtitle mb-6">
                 {searchTerm || filterAccount !== 'all' || filterType !== 'all'
                   ? 'Try adjusting your search criteria or filters'
                   : 'Start by adding your first investment asset'
@@ -493,7 +491,7 @@ export default function AssetsPage() {
               {!(searchTerm || filterAccount !== 'all' || filterType !== 'all') && (
                 <button
                   onClick={() => setShowAddForm(true)}
-                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  className="btn-primary btn-large"
                 >
                   Add Your First Asset
                 </button>
@@ -505,17 +503,17 @@ export default function AssetsPage() {
         {/* Add Asset Modal */}
         {showAddForm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Asset</h3>
+            <div className="card-large w-full max-w-md">
+              <h3 className="card-title subsection-spacing">Add New Asset</h3>
 
               <form onSubmit={handleAddAsset} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Account</label>
+                  <label className="form-label">Account</label>
                   <select
                     required
                     value={formData.account_id}
                     onChange={(e) => setFormData({...formData, account_id: parseInt(e.target.value)})}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="form-input"
                   >
                     <option value={0}>Select Account</option>
                     {portfolioData?.accounts.map(account => (
@@ -525,46 +523,46 @@ export default function AssetsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Symbol</label>
+                  <label className="form-label">Symbol</label>
                   <input
                     type="text"
                     required
                     value={formData.symbol}
                     onChange={(e) => setFormData({...formData, symbol: e.target.value.toUpperCase()})}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="form-input"
                     placeholder="e.g., AAPL, MSFT, BTC-USD"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Shares</label>
+                    <label className="form-label">Shares</label>
                     <input
                       type="number"
                       step="0.001"
                       required
                       value={formData.shares || ''}
                       onChange={(e) => setFormData({...formData, shares: parseFloat(e.target.value) || 0})}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="form-input"
                       placeholder="10"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Avg Cost</label>
+                    <label className="form-label">Avg Cost</label>
                     <input
                       type="number"
                       step="0.01"
                       required
                       value={formData.avg_cost || ''}
                       onChange={(e) => setFormData({...formData, avg_cost: parseFloat(e.target.value) || 0})}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="form-input"
                       placeholder="150.00"
                     />
                   </div>
                 </div>
 
                 <div className="bg-gray-50 p-3 rounded-lg">
-                  <p className="text-sm text-gray-600">
+                  <p className="card-subtitle">
                     <strong>Estimated Cost Basis:</strong> {formatCurrency((formData.shares || 0) * (formData.avg_cost || 0))}
                   </p>
                 </div>
@@ -573,7 +571,7 @@ export default function AssetsPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium flex items-center justify-center gap-2"
+                    className="btn-primary flex-1 flex items-center justify-center gap-2"
                   >
                     {loading ? <LoadingSpinner size="sm" /> : 'Add Asset'}
                   </button>
@@ -583,7 +581,7 @@ export default function AssetsPage() {
                       setShowAddForm(false);
                       setFormData({ account_id: 0, symbol: '', shares: 0, avg_cost: 0 });
                     }}
-                    className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-400 font-medium"
+                    className="btn-secondary flex-1"
                   >
                     Cancel
                   </button>
@@ -596,18 +594,18 @@ export default function AssetsPage() {
         {/* Asset Details Modal */}
         {selectedAsset && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-6">
+            <div className="card-large w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between subsection-spacing">
                 <div className="flex items-center gap-3">
                   <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
                     <span className="text-xl font-bold text-blue-600">{selectedAsset.symbol.slice(0, 2)}</span>
                   </div>
                   <div>
-                    <h3 className="text-2xl font-bold text-gray-900">{selectedAsset.symbol}</h3>
+                    <h3 className="section-title">{selectedAsset.symbol}</h3>
                     {selectedAsset.name && (
-                      <p className="text-gray-600">{selectedAsset.name}</p>
+                      <p className="section-subtitle">{selectedAsset.name}</p>
                     )}
-                    <p className="text-sm text-gray-500">
+                    <p className="card-subtitle">
                       {selectedAsset.name} • {selectedAsset.sector || 'Unknown Sector'}
                     </p>
                   </div>
@@ -620,40 +618,40 @@ export default function AssetsPage() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-6 mb-6">
+              <div className="grid grid-cols-2 gap-6 subsection-spacing">
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-1">Current Price</p>
-                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(selectedAsset.current_price)}</p>
+                  <p className="card-subtitle mb-1">Current Price</p>
+                  <p className="metric-value">{formatCurrency(selectedAsset.current_price)}</p>
                   {selectedAsset.day_change && (
-                    <p className={`text-sm flex items-center gap-1 ${selectedAsset.day_change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <p className={`text-sm flex items-center gap-1 ${selectedAsset.day_change >= 0 ? 'status-positive' : 'status-negative'}`}>
                       {selectedAsset.day_change >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                       {formatCurrency(Math.abs(selectedAsset.day_change))} ({formatPercent(Math.abs(selectedAsset.day_change_percent || 0))})
                     </p>
                   )}
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-1">Market Value</p>
-                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(selectedAsset.value || selectedAsset.market_value)}</p>
-                  <p className="text-sm text-gray-600">{formatNumber(selectedAsset.shares, 3)} shares</p>
+                  <p className="card-subtitle mb-1">Market Value</p>
+                  <p className="metric-value">{formatCurrency(selectedAsset.value || selectedAsset.market_value)}</p>
+                  <p className="card-subtitle">{formatNumber(selectedAsset.shares, 3)} shares</p>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-1">Average Cost</p>
+                  <p className="card-subtitle mb-1">Average Cost</p>
                   <p className="text-xl font-bold text-gray-900">{formatCurrency(selectedAsset.avg_cost)}</p>
-                  <p className="text-sm text-gray-600">Cost Basis: {formatCurrency(selectedAsset.cost_basis)}</p>
+                  <p className="card-subtitle">Cost Basis: {formatCurrency(selectedAsset.cost_basis)}</p>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-1">Unrealized P&L</p>
-                  <p className={`text-xl font-bold ${(selectedAsset.pnl || selectedAsset.unrealized_pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <p className="card-subtitle mb-1">Unrealized P&L</p>
+                  <p className={`text-xl font-bold ${(selectedAsset.pnl || selectedAsset.unrealized_pnl || 0) >= 0 ? 'status-positive' : 'status-negative'}`}>
                     {formatCurrency(selectedAsset.pnl || selectedAsset.unrealized_pnl || 0)}
                   </p>
-                  <p className={`text-sm ${(selectedAsset.pnl || selectedAsset.unrealized_pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <p className={`card-subtitle ${(selectedAsset.pnl || selectedAsset.unrealized_pnl || 0) >= 0 ? 'status-positive' : 'status-negative'}`}>
                     ({formatPercent(selectedAsset.pnl_percent || selectedAsset.unrealized_pnl_percent || 0)})
                   </p>
                 </div>
               </div>
 
-              <div className="mb-6">
-                <h4 className="font-semibold text-gray-900 mb-3">Asset Information</h4>
+              <div className="subsection-spacing">
+                <h4 className="card-title mb-3">Asset Information</h4>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-gray-600">Asset Type:</span>
@@ -677,12 +675,12 @@ export default function AssetsPage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => handleAnalyzeAsset(selectedAsset.symbol)}
-                  className="flex-1 bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors font-medium flex items-center justify-center gap-2"
+                  className="btn-primary flex-1 flex items-center justify-center gap-2"
                 >
                   <Brain size={16} />
                   AI Analysis
                 </button>
-                <button className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2">
+                <button className="btn-secondary flex-1 flex items-center justify-center gap-2">
                   <BarChart3 size={16} />
                   View Chart
                 </button>
@@ -698,13 +696,13 @@ export default function AssetsPage() {
         {/* Delete Confirmation Modal */}
         {showDeleteConfirm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <div className="flex items-center gap-3 mb-4">
+            <div className="card-large w-full max-w-md">
+              <div className="flex items-center gap-3 subsection-spacing">
                 <AlertTriangle className="h-8 w-8 text-red-600" />
-                <h3 className="text-lg font-semibold text-gray-900">Delete Asset</h3>
+                <h3 className="card-title">Delete Asset</h3>
               </div>
 
-              <p className="text-gray-700 mb-6">
+              <p className="card-subtitle subsection-spacing">
                 Are you sure you want to delete this asset? This action cannot be undone.
               </p>
 
@@ -714,13 +712,13 @@ export default function AssetsPage() {
                     // Handle delete logic here
                     setShowDeleteConfirm(null);
                   }}
-                  className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 font-medium"
+                  className="btn-danger flex-1"
                 >
                   Delete Asset
                 </button>
                 <button
                   onClick={() => setShowDeleteConfirm(null)}
-                  className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 font-medium"
+                  className="btn-secondary flex-1"
                 >
                   Cancel
                 </button>

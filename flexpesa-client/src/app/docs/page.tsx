@@ -59,20 +59,20 @@ const portfolio = await response.json();
 console.log(\`Total Value: $\${portfolio.summary.total_value}\`);`;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className="page-container">
+      <div className="content-wrapper">
         <Header
           title="Documentation"
           subtitle="Everything you need to know about FlexPesaAi"
         />
 
         {/* Search Bar */}
-        <div className="mb-8">
+        <div className="subsection-spacing">
           <div className="relative max-w-md">
             <input
               type="text"
               placeholder="Search documentation..."
-              className="w-full pl-4 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="form-input"
             />
             <button className="absolute right-3 top-3 text-gray-400 hover:text-gray-600">
               <ExternalLink size={20} />
@@ -81,29 +81,29 @@ console.log(\`Total Value: $\${portfolio.summary.total_value}\`);`;
         </div>
 
         {/* Quick Links */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 section-spacing">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2">
               <Zap className="text-blue-600" size={20} />
-              <span className="font-semibold text-blue-900">Quick Start</span>
+              <span className="card-title text-blue-900">Quick Start</span>
             </div>
-            <p className="text-blue-700 text-sm">Get started in under 5 minutes</p>
+            <p className="card-subtitle text-blue-700">Get started in under 5 minutes</p>
           </div>
 
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2">
               <Code className="text-green-600" size={20} />
-              <span className="font-semibold text-green-900">API Reference</span>
+              <span className="card-title text-green-900">API Reference</span>
             </div>
-            <p className="text-green-700 text-sm">Complete API documentation</p>
+            <p className="card-subtitle text-green-700">Complete API documentation</p>
           </div>
 
           <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2">
               <BookOpen className="text-purple-600" size={20} />
-              <span className="font-semibold text-purple-900">Tutorials</span>
+              <span className="card-title text-purple-900">Tutorials</span>
             </div>
-            <p className="text-purple-700 text-sm">Step-by-step guides</p>
+            <p className="card-subtitle text-purple-700">Step-by-step guides</p>
           </div>
         </div>
 
@@ -113,10 +113,10 @@ console.log(\`Total Value: $\${portfolio.summary.total_value}\`);`;
           <div className="lg:col-span-2">
             <div className="space-y-8">
               {sections.map((section, index) => (
-                <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <div className="flex items-center gap-3 mb-4">
+                <div key={index} className="card">
+                  <div className="flex items-center gap-3 subsection-spacing">
                     <section.icon className="text-blue-600" size={24} />
-                    <h2 className="text-xl font-bold text-gray-900">{section.title}</h2>
+                    <h2 className="card-title">{section.title}</h2>
                   </div>
 
                   <div className="space-y-3">
@@ -124,7 +124,7 @@ console.log(\`Total Value: $\${portfolio.summary.total_value}\`);`;
                       <div key={itemIndex} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
                         <div>
                           <h3 className="font-medium text-gray-900">{item.title}</h3>
-                          <p className="text-sm text-gray-600">{item.desc}</p>
+                          <p className="card-subtitle">{item.desc}</p>
                         </div>
                         <ArrowRight className="text-gray-400" size={16} />
                       </div>
@@ -151,8 +151,8 @@ console.log(\`Total Value: $\${portfolio.summary.total_value}\`);`;
             </div>
 
             {/* Popular Articles */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <h3 className="font-semibold text-gray-900 mb-3">Popular Articles</h3>
+            <div className="card-compact">
+              <h3 className="card-title mb-3">Popular Articles</h3>
               <div className="space-y-2">
                 <a href="#" className="block text-blue-600 hover:text-blue-800 text-sm">
                   Setting up multi-account tracking
@@ -171,11 +171,11 @@ console.log(\`Total Value: $\${portfolio.summary.total_value}\`);`;
 
             {/* Support */}
             <div className="bg-blue-50 rounded-lg p-4">
-              <h3 className="font-semibold text-blue-900 mb-2">Need Help?</h3>
-              <p className="text-blue-700 text-sm mb-3">
+              <h3 className="card-title text-blue-900 mb-2">Need Help?</h3>
+              <p className="card-subtitle text-blue-700 mb-3">
                 Can&#39;t find what you&#39;re looking for?
               </p>
-              <button className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors">
+              <button className="btn-primary text-sm">
                 Contact Support
               </button>
             </div>

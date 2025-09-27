@@ -1,7 +1,8 @@
 'use client'
 import React, { useState } from 'react';
-import { Check, X, Star, Zap, Shield, Users, Brain, BarChart3, TrendingUp, Clock, ArrowRight, Crown } from 'lucide-react';
-import Header from '@/components/Header';
+import { Check, X, Star, Shield, Users, BarChart3, TrendingUp, Clock, ArrowRight, Crown } from 'lucide-react';
+import LandingNavigation from '@/components/LandingNavigation';
+import Link from 'next/link';
 
 export default function PricingPage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
@@ -176,223 +177,270 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <Header
-          title="Simple, Transparent Pricing"
-          subtitle="Choose the plan that fits your investment management needs"
-        />
+      <LandingNavigation currentPage="pricing" />
 
-        {/* Billing Toggle */}
-        <div className="flex justify-center mb-12">
-          <div className="bg-white rounded-lg p-1 border border-gray-200">
-            <button
-              onClick={() => setBillingCycle('monthly')}
-              className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
-                billingCycle === 'monthly'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Monthly
-            </button>
-            <button
-              onClick={() => setBillingCycle('annual')}
-              className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
-                billingCycle === 'annual'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Annual
-              <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                Save up to 20%
-              </span>
-            </button>
+      <div className="page-container pt-20">
+        <div className="content-wrapper">
+          <div className="text-center page-header">
+            <h1 className="page-title">Simple, Transparent Pricing</h1>
+            <p className="page-subtitle mt-4">Choose the plan that fits your investment management needs</p>
           </div>
-        </div>
 
-        {/* Pricing Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
-          {plans.map((plan, index) => (
-            <div key={index} className={`rounded-lg border p-8 relative ${getPlanColor(plan.color)}`}>
-              {plan.badge && (
-                <div className={`absolute -top-3 left-1/2 transform -translate-x-1/2 px-4 py-1 rounded-full text-xs font-medium ${getBadgeColor(plan.color)}`}>
-                  {plan.badge}
-                </div>
-              )}
-
-              <div className="text-center mb-8">
-                <plan.icon className={`text-${plan.color === 'gray' ? 'gray' : plan.color}-600 mx-auto mb-4`} size={48} />
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-                <p className="text-gray-600 text-sm mb-6">{plan.description}</p>
-
-                <div className="mb-6">
-                  <div className="text-5xl font-bold text-gray-900 mb-2">
-                    {getPrice(plan)}
-                    {plan.monthlyPrice > 0 && (
-                      <span className="text-lg font-normal text-gray-600">
-                        /{billingCycle === 'monthly' ? 'mo' : 'mo'}
-                      </span>
-                    )}
-                  </div>
-                  {billingCycle === 'annual' && plan.savings > 0 && (
-                    <div className="text-sm text-green-600 font-medium">
-                      Save {plan.savings}% with annual billing
-                    </div>
-                  )}
-                  {billingCycle === 'annual' && plan.monthlyPrice > 0 && (
-                    <div className="text-sm text-gray-500">
-                      Billed annually (${plan.annualPrice * 12})
-                    </div>
-                  )}
-                </div>
-
-                <button className={`w-full py-3 px-6 rounded-lg font-medium transition-colors ${getButtonColor(plan.color)}`}>
-                  {plan.cta}
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                {plan.features.map((feature, featureIndex) => (
-                  <div key={featureIndex} className="flex items-center gap-3">
-                    {feature.included ? (
-                      <Check className="text-green-600 flex-shrink-0" size={20} />
-                    ) : (
-                      <X className="text-gray-400 flex-shrink-0" size={20} />
-                    )}
-                    <span className={`text-sm ${feature.included ? 'text-gray-700' : 'text-gray-400'}`}>
-                      {feature.name}
-                    </span>
-                  </div>
-                ))}
-              </div>
+          {/* Billing Toggle */}
+          <div className="flex justify-center subsection-spacing">
+            <div className="bg-white rounded-lg p-1 border border-gray-200">
+              <button
+                onClick={() => setBillingCycle('monthly')}
+                className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+                  billingCycle === 'monthly'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setBillingCycle('annual')}
+                className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+                  billingCycle === 'annual'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Annual
+                <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                  Save up to 20%
+                </span>
+              </button>
             </div>
-          ))}
-        </div>
-
-        {/* Feature Comparison Table */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-16">
-          <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">Detailed Feature Comparison</h2>
-
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-4 px-4 font-semibold text-gray-900">Features</th>
-                  <th className="text-center py-4 px-4 font-semibold text-gray-900">Starter</th>
-                  <th className="text-center py-4 px-4 font-semibold text-gray-900">Professional</th>
-                  <th className="text-center py-4 px-4 font-semibold text-gray-900">Enterprise</th>
-                </tr>
-              </thead>
-              <tbody>
-                {features.map((category, categoryIndex) => (
-                  <React.Fragment key={categoryIndex}>
-                    <tr className="bg-gray-50">
-                      <td colSpan={4} className="py-3 px-4 font-semibold text-gray-800 text-sm">
-                        {category.category}
-                      </td>
-                    </tr>
-                    {category.items.map((item, itemIndex) => (
-                      <tr key={itemIndex} className="border-b border-gray-100">
-                        <td className="py-3 px-4 text-gray-700">{item.name}</td>
-                        <td className="py-3 px-4 text-center">
-                          {typeof item.starter === 'boolean' ? (
-                            item.starter ? (
-                              <Check className="text-green-600 mx-auto" size={20} />
-                            ) : (
-                              <X className="text-gray-400 mx-auto" size={20} />
-                            )
-                          ) : (
-                            <span className="text-gray-700">{item.starter}</span>
-                          )}
-                        </td>
-                        <td className="py-3 px-4 text-center">
-                          {typeof item.pro === 'boolean' ? (
-                            item.pro ? (
-                              <Check className="text-green-600 mx-auto" size={20} />
-                            ) : (
-                              <X className="text-gray-400 mx-auto" size={20} />
-                            )
-                          ) : (
-                            <span className="text-gray-700">{item.pro}</span>
-                          )}
-                        </td>
-                        <td className="py-3 px-4 text-center">
-                          {typeof item.enterprise === 'boolean' ? (
-                            item.enterprise ? (
-                              <Check className="text-green-600 mx-auto" size={20} />
-                            ) : (
-                              <X className="text-gray-400 mx-auto" size={20} />
-                            )
-                          ) : (
-                            <span className="text-gray-700">{item.enterprise}</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </React.Fragment>
-                ))}
-              </tbody>
-            </table>
           </div>
-        </div>
 
-        {/* FAQ Section */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-16">
-          <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">Frequently Asked Questions</h2>
+          {/* Pricing Cards */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 section-spacing">
+            {plans.map((plan, index) => (
+              <div key={index} className={`rounded-lg border p-8 relative ${getPlanColor(plan.color)}`}>
+                {plan.badge && (
+                  <div className={`absolute -top-3 left-1/2 transform -translate-x-1/2 px-4 py-1 rounded-full text-xs font-medium ${getBadgeColor(plan.color)}`}>
+                    {plan.badge}
+                  </div>
+                )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {faqs.map((faq, index) => (
-              <div key={index} className="space-y-3">
-                <h3 className="font-semibold text-gray-900">{faq.question}</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">{faq.answer}</p>
+                <div className="text-center subsection-spacing">
+                  <plan.icon className={`text-${plan.color === 'gray' ? 'gray' : plan.color}-600 mx-auto mb-4`} size={48} />
+                  <h3 className="section-title mb-2">{plan.name}</h3>
+                  <p className="section-subtitle mb-6">{plan.description}</p>
+
+                  <div className="subsection-spacing">
+                    <div className="text-5xl font-bold text-gray-900 mb-2">
+                      {getPrice(plan)}
+                      {plan.monthlyPrice > 0 && (
+                        <span className="text-lg font-normal text-gray-600">
+                          /{billingCycle === 'monthly' ? 'mo' : 'mo'}
+                        </span>
+                      )}
+                    </div>
+                    {billingCycle === 'annual' && plan.savings > 0 && (
+                      <div className="text-sm text-green-600 font-medium">
+                        Save {plan.savings}% with annual billing
+                      </div>
+                    )}
+                    {billingCycle === 'annual' && plan.monthlyPrice > 0 && (
+                      <div className="card-subtitle">
+                        Billed annually (${plan.annualPrice * 12})
+                      </div>
+                    )}
+                  </div>
+
+                  <button className={`w-full py-3 px-6 rounded-lg font-medium transition-colors ${getButtonColor(plan.color)}`}>
+                    {plan.cta}
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {plan.features.map((feature, featureIndex) => (
+                    <div key={featureIndex} className="flex items-center gap-3">
+                      {feature.included ? (
+                        <Check className="text-green-600 flex-shrink-0" size={20} />
+                      ) : (
+                        <X className="text-gray-400 flex-shrink-0" size={20} />
+                      )}
+                      <span className={`text-sm ${feature.included ? 'text-gray-700' : 'text-gray-400'}`}>
+                        {feature.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
-        </div>
 
-        {/* Trust Indicators */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-16">
-          <div className="text-center">
-            <Shield className="text-blue-600 mx-auto mb-3" size={32} />
-            <h3 className="font-semibold text-gray-900 mb-1">Bank-Grade Security</h3>
-            <p className="text-gray-600 text-sm">256-bit SSL encryption</p>
-          </div>
-          <div className="text-center">
-            <Clock className="text-green-600 mx-auto mb-3" size={32} />
-            <h3 className="font-semibold text-gray-900 mb-1">99.9% Uptime</h3>
-            <p className="text-gray-600 text-sm">Reliable service guarantee</p>
-          </div>
-          <div className="text-center">
-            <Users className="text-purple-600 mx-auto mb-3" size={32} />
-            <h3 className="font-semibold text-gray-900 mb-1">15,000+ Users</h3>
-            <p className="text-gray-600 text-sm">Trusted by investors</p>
-          </div>
-          <div className="text-center">
-            <Star className="text-yellow-600 mx-auto mb-3" size={32} />
-            <h3 className="font-semibold text-gray-900 mb-1">4.8/5 Rating</h3>
-            <p className="text-gray-600 text-sm">Customer satisfaction</p>
-          </div>
-        </div>
+          {/* Feature Comparison Table */}
+          <div className="card-large section-spacing">
+            <h2 className="section-title subsection-spacing text-center">Detailed Feature Comparison</h2>
 
-        {/* CTA Section */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg p-8 text-center text-white">
-          <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
-          <p className="text-xl text-blue-100 mb-8">
-            Join thousands of investors who trust FlexPesaAi to manage their wealth intelligently.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-white text-blue-600 px-8 py-3 rounded-lg hover:bg-gray-50 transition-colors font-medium flex items-center gap-2">
-              Start Your Free Trial
-              <ArrowRight size={20} />
-            </button>
-            <button className="border-2 border-white text-white px-8 py-3 rounded-lg hover:bg-white hover:text-blue-600 transition-colors font-medium">
-              Schedule a Demo
-            </button>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-4 px-4 font-semibold text-gray-900">Features</th>
+                    <th className="text-center py-4 px-4 font-semibold text-gray-900">Starter</th>
+                    <th className="text-center py-4 px-4 font-semibold text-gray-900">Professional</th>
+                    <th className="text-center py-4 px-4 font-semibold text-gray-900">Enterprise</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {features.map((category, categoryIndex) => (
+                    <React.Fragment key={categoryIndex}>
+                      <tr className="bg-gray-50">
+                        <td colSpan={4} className="py-3 px-4 font-semibold text-gray-800 text-sm">
+                          {category.category}
+                        </td>
+                      </tr>
+                      {category.items.map((item, itemIndex) => (
+                        <tr key={itemIndex} className="border-b border-gray-100">
+                          <td className="py-3 px-4 text-gray-700">{item.name}</td>
+                          <td className="py-3 px-4 text-center">
+                            {typeof item.starter === 'boolean' ? (
+                              item.starter ? (
+                                <Check className="text-green-600 mx-auto" size={20} />
+                              ) : (
+                                <X className="text-gray-400 mx-auto" size={20} />
+                              )
+                            ) : (
+                              <span className="text-gray-700">{item.starter}</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            {typeof item.pro === 'boolean' ? (
+                              item.pro ? (
+                                <Check className="text-green-600 mx-auto" size={20} />
+                              ) : (
+                                <X className="text-gray-400 mx-auto" size={20} />
+                              )
+                            ) : (
+                              <span className="text-gray-700">{item.pro}</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            {typeof item.enterprise === 'boolean' ? (
+                              item.enterprise ? (
+                                <Check className="text-green-600 mx-auto" size={20} />
+                              ) : (
+                                <X className="text-gray-400 mx-auto" size={20} />
+                              )
+                            ) : (
+                              <span className="text-gray-700">{item.enterprise}</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </React.Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-          <p className="text-blue-200 text-sm mt-4">No credit card required • Cancel anytime</p>
+
+          {/* FAQ Section */}
+          <div className="card-large section-spacing">
+            <h2 className="section-title subsection-spacing text-center">Frequently Asked Questions</h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {faqs.map((faq, index) => (
+                <div key={index} className="space-y-3">
+                  <h3 className="card-title">{faq.question}</h3>
+                  <p className="card-subtitle leading-relaxed">{faq.answer}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Trust Indicators */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 section-spacing">
+            <div className="text-center">
+              <Shield className="text-blue-600 mx-auto mb-3" size={32} />
+              <h3 className="card-title mb-1">Bank-Grade Security</h3>
+              <p className="card-subtitle">256-bit SSL encryption</p>
+            </div>
+            <div className="text-center">
+              <Clock className="text-green-600 mx-auto mb-3" size={32} />
+              <h3 className="card-title mb-1">99.9% Uptime</h3>
+              <p className="card-subtitle">Reliable service guarantee</p>
+            </div>
+            <div className="text-center">
+              <Users className="text-purple-600 mx-auto mb-3" size={32} />
+              <h3 className="card-title mb-1">15,000+ Users</h3>
+              <p className="card-subtitle">Trusted by investors</p>
+            </div>
+            <div className="text-center">
+              <Star className="text-yellow-600 mx-auto mb-3" size={32} />
+              <h3 className="card-title mb-1">4.8/5 Rating</h3>
+              <p className="card-subtitle">Customer satisfaction</p>
+            </div>
+          </div>
+
+          {/* CTA Section */}
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg p-8 text-center text-white section-spacing">
+            <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
+            <p className="text-xl text-blue-100 subsection-spacing">
+              Join thousands of investors who trust FlexPesaAi to manage their wealth intelligently.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button className="bg-white text-blue-600 px-8 py-3 rounded-lg hover:bg-gray-50 transition-colors font-medium flex items-center gap-2">
+                Start Your Free Trial
+                <ArrowRight size={20} />
+              </button>
+              <Link href="/contact">
+                <button className="border-2 border-white text-white px-8 py-3 rounded-lg hover:bg-white hover:text-blue-600 transition-colors font-medium">
+                  Schedule a Demo
+                </button>
+              </Link>
+            </div>
+            <p className="text-blue-200 text-sm mt-4">No credit card required • Cancel anytime</p>
+          </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div className="col-span-1 md:col-span-2">
+              <div className="flex items-center space-x-2 mb-4">
+                <span className="text-xl font-bold">FlexPesaAi</span>
+              </div>
+              <p className="text-gray-400 mb-6 max-w-md">
+                Professional investment management powered by artificial intelligence.
+                Make smarter decisions with real-time insights and analytics.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-semibold mb-4">Product</h3>
+              <ul className="space-y-2 text-gray-400">
+                <li><Link href="/#features" className="hover:text-white transition-colors">Features</Link></li>
+                <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
+                <li><Link href="/security" className="hover:text-white transition-colors">Security</Link></li>
+                <li><Link href="/api-docs" className="hover:text-white transition-colors">API</Link></li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-semibold mb-4">Support</h3>
+              <ul className="space-y-2 text-gray-400">
+                <li><Link href="/docs" className="hover:text-white transition-colors">Documentation</Link></li>
+                <li><Link href="/help" className="hover:text-white transition-colors">Help Center</Link></li>
+                <li><Link href="/contact" className="hover:text-white transition-colors">Contact Us</Link></li>
+                <li><Link href="/status" className="hover:text-white transition-colors">Status</Link></li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
+            <p>&copy; 2024 FlexPesaAi. All rights reserved. | <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link> | <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link></p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

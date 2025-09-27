@@ -1,39 +1,23 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
 
 interface HeaderProps {
   title: string;
-  subtitle?:string;
+  subtitle?: string;
+  children?: React.ReactNode; // For additional content like buttons
 }
 
-export default function Header({title, subtitle}: HeaderProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
+export default function Header({ title, subtitle, children }: HeaderProps) {
   return (
-    <div className="mb-8 flex items-center justify-between">
-      {/* Title & Subtitle */}
-      <div>
-        <h1 className="text-xl font-bold text-gray-900">
-          {title}
-        </h1>
-        {subtitle && <p className="text-gray-600 text-lg">
-          {subtitle}
-        </p>}
+    <div className="page-header flex items-start justify-between">
+      <div className="flex-1">
+        <h1 className="page-title">{title}</h1>
+        {subtitle && <p className="page-subtitle mt-2">{subtitle}</p>}
       </div>
+      {children && (
+        <div className="flex items-center gap-3 ml-6">
+          {children}
+        </div>
+      )}
     </div>
   );
 }

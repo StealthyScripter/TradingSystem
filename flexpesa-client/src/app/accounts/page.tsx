@@ -86,7 +86,7 @@ export default function AccountsPage() {
 
   if (!isLoaded || !isSignedIn) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="page-container flex items-center justify-center">
         <LoadingSpinner size="xl" />
       </div>
     );
@@ -94,10 +94,10 @@ export default function AccountsPage() {
 
   if (loading && !portfolioData) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="page-container flex items-center justify-center">
         <div className="text-center">
           <LoadingSpinner size="xl" className="mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-700">Loading Accounts...</h2>
+          <h2 className="section-title">Loading Accounts...</h2>
         </div>
       </div>
     );
@@ -107,49 +107,48 @@ export default function AccountsPage() {
   const accounts = portfolioData?.accounts || [];
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex justify-between items-start mb-8">
-          <Header
-            title="Account Management"
-            subtitle="Manage your investment accounts and track performance"
-          />
-          <div className="flex gap-3">
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
-            >
-              <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
-              {refreshing ? 'Refreshing...' : 'Refresh'}
-            </button>
-            <button
-              onClick={() => setShowAddForm(true)}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-            >
-              <Plus size={16} />
-              Add Account
-            </button>
-          </div>
-        </div>
+    <div className="page-container">
+      <div className="content-wrapper">
+        <Header
+          title="Account Management"
+          subtitle="Manage your investment accounts and track performance"
+        >
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="btn-secondary flex items-center gap-2"
+          >
+            <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="btn-primary flex items-center gap-2"
+          >
+            <Plus size={16} />
+            Add Account
+          </button>
+        </Header>
 
         {error && (
-          <ErrorMessage
-            message={error}
-            onRetry={() => {
-              setError(null);
-              fetchAccounts();
-            }}
-          />
+          <div className="section-spacing">
+            <ErrorMessage
+              message={error}
+              onRetry={() => {
+                setError(null);
+                fetchAccounts();
+              }}
+            />
+          </div>
         )}
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-blue-500">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 section-spacing">
+          <div className="card border-l-4 border-blue-500">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Value</p>
-                <p className="text-2xl font-bold text-gray-900">{formatCurrency(totals.totalValue)}</p>
+                <p className="card-subtitle">Total Value</p>
+                <p className="metric-value">{formatCurrency(totals.totalValue)}</p>
               </div>
               <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
                 <DollarSign className="h-6 w-6 text-blue-600" />
@@ -157,28 +156,28 @@ export default function AccountsPage() {
             </div>
           </div>
 
-          <div className={`bg-white rounded-lg shadow-lg p-6 border-l-4 ${totals.totalPnL >= 0 ? 'border-green-500' : 'border-red-500'}`}>
+          <div className={`card border-l-4 ${totals.totalPnL >= 0 ? 'border-green-500' : 'border-red-500'}`}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total P&L</p>
-                <p className={`text-2xl font-bold ${totals.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <p className="card-subtitle">Total P&L</p>
+                <p className={`metric-value ${totals.totalPnL >= 0 ? 'status-positive' : 'status-negative'}`}>
                   {formatCurrency(totals.totalPnL)}
                 </p>
               </div>
               <div className={`h-12 w-12 rounded-lg flex items-center justify-center ${totals.totalPnL >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
                 {totals.totalPnL >= 0 ?
-                  <TrendingUp className={`h-6 w-6 text-green-600`} /> :
-                  <TrendingDown className={`h-6 w-6 text-red-600`} />
+                  <TrendingUp className="h-6 w-6 text-green-600" /> :
+                  <TrendingDown className="h-6 w-6 text-red-600" />
                 }
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-purple-500">
+          <div className="card border-l-4 border-purple-500">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Active Accounts</p>
-                <p className="text-2xl font-bold text-gray-900">{totals.totalAccounts}</p>
+                <p className="card-subtitle">Active Accounts</p>
+                <p className="metric-value">{totals.totalAccounts}</p>
               </div>
               <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
                 <Building2 className="h-6 w-6 text-purple-600" />
@@ -186,11 +185,11 @@ export default function AccountsPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-orange-500">
+          <div className="card border-l-4 border-orange-500">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Assets</p>
-                <p className="text-2xl font-bold text-gray-900">{totals.totalAssets}</p>
+                <p className="card-subtitle">Total Assets</p>
+                <p className="metric-value">{totals.totalAssets}</p>
               </div>
               <div className="h-12 w-12 bg-orange-100 rounded-lg flex items-center justify-center">
                 <BarChart3 className="h-6 w-6 text-orange-600" />
@@ -200,16 +199,16 @@ export default function AccountsPage() {
         </div>
 
         {/* Accounts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 section-spacing">
           {accounts.map((account: PortfolioAccount) => (
-            <div key={account.id} className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
-              <div className="flex items-start justify-between mb-4">
+            <div key={account.id} className="card hover:shadow-xl transition-shadow">
+              <div className="flex items-start justify-between subsection-spacing">
                 <div className="flex items-center gap-3">
                   <div className="text-3xl">
                     {getAccountIcon(account.name)}
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900">{account.name}</h3>
+                    <h3 className="card-title">{account.name}</h3>
                     <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full capitalize">
                       {account.account_type}
                     </span>
@@ -236,35 +235,35 @@ export default function AccountsPage() {
                 </div>
               </div>
 
-              <div className="space-y-3 mb-4">
+              <div className="space-y-3 subsection-spacing">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Balance</span>
-                  <span className="text-lg font-bold text-gray-900">{formatCurrency(account.balance)}</span>
+                  <span className="card-subtitle">Balance</span>
+                  <span className="card-title">{formatCurrency(account.balance)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Cost Basis</span>
+                  <span className="card-subtitle">Cost Basis</span>
                   <span className="text-sm font-medium text-gray-700">{formatCurrency(account.cost_basis || 0)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">P&L</span>
+                  <span className="card-subtitle">P&L</span>
                   <div className="text-right">
-                    <div className={`text-sm font-medium ${(account.pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <div className={`text-sm font-medium ${(account.pnl || 0) >= 0 ? 'status-positive' : 'status-negative'}`}>
                       {formatCurrency(account.pnl || 0)}
                     </div>
-                    <div className={`text-xs ${(account.pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <div className={`text-xs ${(account.pnl || 0) >= 0 ? 'status-positive' : 'status-negative'}`}>
                       ({formatPercent(account.pnl_percent || 0)})
                     </div>
                   </div>
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t">
-                  <span className="text-sm text-gray-600">Assets</span>
+                  <span className="card-subtitle">Assets</span>
                   <span className="text-sm font-medium text-gray-900">{account.assets?.length || 0} holdings</span>
                 </div>
               </div>
 
               {account.description && (
-                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-700">{account.description}</p>
+                <div className="subsection-spacing p-3 bg-gray-50 rounded-lg">
+                  <p className="card-subtitle">{account.description}</p>
                 </div>
               )}
 
@@ -276,15 +275,15 @@ export default function AccountsPage() {
         </div>
 
         {accounts.length === 0 && !loading && (
-          <div className="bg-white rounded-lg shadow-lg p-12 text-center">
+          <div className="card-large text-center section-spacing">
             <Building2 className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Accounts Yet</h3>
-            <p className="text-gray-600 mb-6">
+            <h3 className="card-title mb-2">No Accounts Yet</h3>
+            <p className="card-subtitle mb-6">
               Get started by adding your first investment account to track your portfolio.
             </p>
             <button
               onClick={() => setShowAddForm(true)}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              className="btn-primary btn-large"
             >
               Add Your First Account
             </button>
@@ -294,28 +293,28 @@ export default function AccountsPage() {
         {/* Add Account Modal */}
         {showAddForm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Account</h3>
+            <div className="card-large w-full max-w-md">
+              <h3 className="card-title subsection-spacing">Add New Account</h3>
 
               <form onSubmit={handleAddAccount} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
+                  <label className="form-label">Account Name</label>
                   <input
                     type="text"
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="form-input"
                     placeholder="e.g., Wells Fargo Brokerage"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Account Type</label>
+                  <label className="form-label">Account Type</label>
                   <select
                     value={formData.account_type}
                     onChange={(e) => setFormData({...formData, account_type: e.target.value})}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="form-input"
                   >
                     <option value="brokerage">Brokerage</option>
                     <option value="retirement">Retirement (401k/IRA)</option>
@@ -327,11 +326,11 @@ export default function AccountsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+                  <label className="form-label">Currency</label>
                   <select
                     value={formData.currency}
                     onChange={(e) => setFormData({...formData, currency: e.target.value})}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="form-input"
                   >
                     <option value="USD">USD - US Dollar</option>
                     <option value="EUR">EUR - Euro</option>
@@ -341,12 +340,12 @@ export default function AccountsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
+                  <label className="form-label">Description (Optional)</label>
                   <textarea
                     rows={3}
                     value={formData.description}
                     onChange={(e) => setFormData({...formData, description: e.target.value})}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="form-input"
                     placeholder="Brief description of this account..."
                   />
                 </div>
@@ -355,7 +354,7 @@ export default function AccountsPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium flex items-center justify-center gap-2"
+                    className="btn-primary flex-1 flex items-center justify-center gap-2"
                   >
                     {loading ? <LoadingSpinner size="sm" /> : 'Add Account'}
                   </button>
@@ -365,7 +364,7 @@ export default function AccountsPage() {
                       setShowAddForm(false);
                       setFormData({ name: '', account_type: 'brokerage', description: '', currency: 'USD' });
                     }}
-                    className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-400 font-medium"
+                    className="btn-secondary flex-1"
                   >
                     Cancel
                   </button>
@@ -378,13 +377,13 @@ export default function AccountsPage() {
         {/* Account Details Modal */}
         {selectedAccount && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-6">
+            <div className="card-large w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between subsection-spacing">
                 <div className="flex items-center gap-3">
                   <div className="text-3xl">{getAccountIcon(selectedAccount.name)}</div>
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900">{selectedAccount.name}</h3>
-                    <span className="text-sm text-gray-600 capitalize">{selectedAccount.account_type}</span>
+                    <h3 className="card-title">{selectedAccount.name}</h3>
+                    <span className="card-subtitle capitalize">{selectedAccount.account_type}</span>
                   </div>
                 </div>
                 <button
@@ -395,24 +394,24 @@ export default function AccountsPage() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-6 mb-6">
+              <div className="grid grid-cols-2 gap-6 subsection-spacing">
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-1">Current Balance</p>
-                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(selectedAccount.balance)}</p>
+                  <p className="card-subtitle mb-1">Current Balance</p>
+                  <p className="metric-value">{formatCurrency(selectedAccount.balance)}</p>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-1">Total P&L</p>
-                  <p className={`text-2xl font-bold ${(selectedAccount.pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <p className="card-subtitle mb-1">Total P&L</p>
+                  <p className={`metric-value ${(selectedAccount.pnl || 0) >= 0 ? 'status-positive' : 'status-negative'}`}>
                     {formatCurrency(selectedAccount.pnl || 0)}
                   </p>
-                  <p className={`text-sm ${(selectedAccount.pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <p className={`text-sm ${(selectedAccount.pnl || 0) >= 0 ? 'status-positive' : 'status-negative'}`}>
                     ({formatPercent(selectedAccount.pnl_percent || 0)})
                   </p>
                 </div>
               </div>
 
-              <div className="mb-6">
-                <h4 className="font-semibold text-gray-900 mb-3">Holdings ({selectedAccount.assets?.length || 0})</h4>
+              <div className="subsection-spacing">
+                <h4 className="card-title mb-3">Holdings ({selectedAccount.assets?.length || 0})</h4>
                 {selectedAccount.assets && selectedAccount.assets.length > 0 ? (
                   <div className="space-y-2">
                     {selectedAccount.assets.slice(0, 5).map((asset: Asset) => (
@@ -428,7 +427,7 @@ export default function AccountsPage() {
                         </div>
                         <div className="text-right">
                           <div className="font-medium text-gray-900">{formatCurrency(asset.value || asset.market_value)}</div>
-                          <div className={`text-xs ${(asset.pnl || asset.unrealized_pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          <div className={`text-xs ${(asset.pnl || asset.unrealized_pnl || 0) >= 0 ? 'status-positive' : 'status-negative'}`}>
                             {formatPercent(asset.pnl_percent || asset.unrealized_pnl_percent || 0)}
                           </div>
                         </div>
@@ -441,14 +440,14 @@ export default function AccountsPage() {
                     )}
                   </div>
                 ) : (
-                  <p className="text-gray-600 text-sm">No assets in this account yet.</p>
+                  <p className="card-subtitle">No assets in this account yet.</p>
                 )}
               </div>
 
               {selectedAccount.description && (
-                <div className="mb-4">
-                  <h4 className="font-semibold text-gray-900 mb-2">Description</h4>
-                  <p className="text-gray-700 text-sm">{selectedAccount.description}</p>
+                <div className="subsection-spacing">
+                  <h4 className="card-title mb-2">Description</h4>
+                  <p className="card-subtitle">{selectedAccount.description}</p>
                 </div>
               )}
 
@@ -462,13 +461,13 @@ export default function AccountsPage() {
         {/* Delete Confirmation Modal */}
         {showDeleteConfirm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <div className="flex items-center gap-3 mb-4">
+            <div className="card-large w-full max-w-md">
+              <div className="flex items-center gap-3 subsection-spacing">
                 <AlertTriangle className="h-8 w-8 text-red-600" />
-                <h3 className="text-lg font-semibold text-gray-900">Delete Account</h3>
+                <h3 className="card-title">Delete Account</h3>
               </div>
 
-              <p className="text-gray-700 mb-6">
+              <p className="card-subtitle subsection-spacing">
                 Are you sure you want to delete this account? This action cannot be undone and will remove all associated assets.
               </p>
 
@@ -478,13 +477,13 @@ export default function AccountsPage() {
                     // Handle delete logic here
                     setShowDeleteConfirm(null);
                   }}
-                  className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 font-medium"
+                  className="btn-danger flex-1"
                 >
                   Delete Account
                 </button>
                 <button
                   onClick={() => setShowDeleteConfirm(null)}
-                  className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 font-medium"
+                  className="btn-secondary flex-1"
                 >
                   Cancel
                 </button>

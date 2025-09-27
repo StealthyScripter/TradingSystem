@@ -115,20 +115,20 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className="page-container">
+      <div className="content-wrapper">
         <Header
           title="Contact Us"
           subtitle="Get in touch with our team - we're here to help"
         />
 
         {/* Contact Methods */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 section-spacing">
           {contactMethods.map((method, index) => (
             <div key={index} className={`border rounded-lg p-6 cursor-pointer transition-all duration-200 ${getColorClasses(method.color)}`}>
               <method.icon className={`text-${method.color}-600 mb-4`} size={32} />
-              <h3 className="font-semibold text-gray-900 mb-2">{method.title}</h3>
-              <p className="text-gray-600 text-sm mb-3">{method.description}</p>
+              <h3 className="card-title mb-2">{method.title}</h3>
+              <p className="card-subtitle mb-3">{method.description}</p>
               <div className="text-sm font-medium text-gray-700 mb-4">{method.details}</div>
               <button className={`w-full bg-${method.color}-600 text-white py-2 px-4 rounded-lg hover:bg-${method.color}-700 transition-colors text-sm font-medium`}>
                 {method.action}
@@ -139,11 +139,11 @@ export default function ContactPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Contact Form */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Send us a Message</h2>
+          <div className="card-large">
+            <h2 className="section-title subsection-spacing">Send us a Message</h2>
 
             {submitStatus === 'success' && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 subsection-spacing">
                 <div className="flex items-center gap-2">
                   <CheckCircle className="text-green-600" size={20} />
                   <span className="font-medium text-green-900">Message sent successfully!</span>
@@ -153,7 +153,7 @@ export default function ContactPage() {
             )}
 
             {submitStatus === 'error' && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 subsection-spacing">
                 <div className="flex items-center gap-2">
                   <AlertCircle className="text-red-600" size={20} />
                   <span className="font-medium text-red-900">Failed to send message</span>
@@ -165,27 +165,27 @@ export default function ContactPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+                  <label className="form-label">Name *</label>
                   <input
                     type="text"
                     name="name"
                     required
                     value={formData.name}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="form-input"
                     placeholder="Your full name"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                  <label className="form-label">Email *</label>
                   <input
                     type="email"
                     name="email"
                     required
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="form-input"
                     placeholder="your@email.com"
                   />
                 </div>
@@ -193,12 +193,12 @@ export default function ContactPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                  <label className="form-label">Subject</label>
                   <select
                     name="subject"
                     value={formData.subject}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="form-input"
                   >
                     <option value="general">General Inquiry</option>
                     <option value="technical">Technical Support</option>
@@ -209,12 +209,12 @@ export default function ContactPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                  <label className="form-label">Priority</label>
                   <select
                     name="priority"
                     value={formData.priority}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="form-input"
                   >
                     <option value="low">Low</option>
                     <option value="normal">Normal</option>
@@ -225,14 +225,14 @@ export default function ContactPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Message *</label>
+                <label className="form-label">Message *</label>
                 <textarea
                   name="message"
                   required
                   rows={6}
                   value={formData.message}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  className="form-input resize-none"
                   placeholder="Tell us how we can help you..."
                 />
               </div>
@@ -240,7 +240,7 @@ export default function ContactPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium transition-colors"
+                className="btn-primary w-full btn-large flex items-center justify-center gap-2"
               >
                 {isSubmitting ? (
                   <>
@@ -260,15 +260,15 @@ export default function ContactPage() {
           {/* Support Info & Offices */}
           <div className="space-y-8">
             {/* Support Categories */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-6">How We Can Help</h3>
+            <div className="card">
+              <h3 className="card-title subsection-spacing">How We Can Help</h3>
               <div className="space-y-4">
                 {supportOptions.map((option, index) => (
                   <div key={index} className="flex gap-4 p-4 border border-gray-100 rounded-lg">
                     <option.icon className="text-blue-600 mt-1" size={24} />
                     <div>
-                      <h4 className="font-semibold text-gray-900 mb-1">{option.title}</h4>
-                      <p className="text-gray-600 text-sm mb-2">{option.description}</p>
+                      <h4 className="card-title mb-1">{option.title}</h4>
+                      <p className="card-subtitle mb-2">{option.description}</p>
                       <div className="flex items-center gap-2">
                         <Clock size={14} className="text-gray-400" />
                         <span className="text-xs text-gray-500">Response time: {option.responseTime}</span>
@@ -280,8 +280,8 @@ export default function ContactPage() {
             </div>
 
             {/* Office Locations */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-6">Our Offices</h3>
+            <div className="card">
+              <h3 className="card-title subsection-spacing">Our Offices</h3>
               <div className="space-y-6">
                 {offices.map((office, index) => (
                   <div key={index} className="border-b border-gray-100 last:border-b-0 pb-4 last:pb-0">
@@ -289,14 +289,14 @@ export default function ContactPage() {
                       <MapPin className="text-gray-400 mt-1" size={20} />
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-semibold text-gray-900">{office.city}</h4>
+                          <h4 className="card-title">{office.city}</h4>
                           <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
                             {office.type}
                           </span>
                         </div>
-                        <p className="text-gray-600 text-sm">{office.address}</p>
-                        <p className="text-gray-600 text-sm">{office.zipCode}</p>
-                        <p className="text-gray-600 text-sm">{office.phone}</p>
+                        <p className="card-subtitle">{office.address}</p>
+                        <p className="card-subtitle">{office.zipCode}</p>
+                        <p className="card-subtitle">{office.phone}</p>
                       </div>
                     </div>
                   </div>
@@ -306,7 +306,7 @@ export default function ContactPage() {
 
             {/* Business Hours */}
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Business Hours</h3>
+              <h3 className="card-title text-gray-900 mb-4">Business Hours</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Monday - Friday</span>

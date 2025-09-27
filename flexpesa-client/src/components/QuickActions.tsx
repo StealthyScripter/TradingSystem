@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Plus, DollarSign, Brain, TrendingUp } from 'lucide-react';
-import { PortfolioAccount, AccountCreateRequest, AssetCreateRequest } from '@/types'; // Use PortfolioAccount
+import { PortfolioAccount, AccountCreateRequest, AssetCreateRequest } from '@/types';
 import LoadingSpinner from './LoadingSpinner';
 
 interface QuickActionsProps {
-  accounts: PortfolioAccount[]; // Updated type
+  accounts: PortfolioAccount[];
   onAddAccount: (accountData: AccountCreateRequest) => Promise<void>;
   onAddAsset: (assetData: AssetCreateRequest) => Promise<void>;
   onRunAnalysis: () => Promise<void>;
@@ -90,8 +90,8 @@ const QuickActions: React.FC<QuickActionsProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-      <h3 className="text-xl font-bold mb-4">Quick Actions</h3>
+    <div className="card">
+      <h3 className="card-title subsection-spacing">Quick Actions</h3>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Add Account */}
@@ -126,7 +126,7 @@ const QuickActions: React.FC<QuickActionsProps> = ({
           <TrendingUp size={20} className="text-orange-600" />
           <div>
             <div className="font-medium text-sm">Portfolio Health</div>
-            <div className="text-xs text-gray-600">Excellent</div>
+            <div className="card-subtitle">Excellent</div>
           </div>
         </div>
       </div>
@@ -134,25 +134,25 @@ const QuickActions: React.FC<QuickActionsProps> = ({
       {/* Add Account Form */}
       {showAddAccount && (
         <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-          <h4 className="font-semibold mb-3">Add New Account</h4>
+          <h4 className="card-title mb-3">Add New Account</h4>
           <form onSubmit={handleAddAccount} className="space-y-3">
             <div>
-              <label className="block text-sm font-medium mb-1">Account Name</label>
+              <label className="form-label">Account Name</label>
               <input
                 type="text"
                 required
                 value={accountForm.name}
                 onChange={(e) => setAccountForm({...accountForm, name: e.target.value})}
-                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                className="form-input"
                 placeholder="e.g., TD Ameritrade"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Account Type</label>
+              <label className="form-label">Account Type</label>
               <select
                 value={accountForm.account_type}
                 onChange={(e) => setAccountForm({...accountForm, account_type: e.target.value})}
-                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                className="form-input"
               >
                 <option value="brokerage">Brokerage</option>
                 <option value="retirement">Retirement</option>
@@ -161,12 +161,12 @@ const QuickActions: React.FC<QuickActionsProps> = ({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Description (Optional)</label>
+              <label className="form-label">Description (Optional)</label>
               <input
                 type="text"
                 value={accountForm.description || ''}
                 onChange={(e) => setAccountForm({...accountForm, description: e.target.value})}
-                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                className="form-input"
                 placeholder="e.g., Main investment account"
               />
             </div>
@@ -174,14 +174,14 @@ const QuickActions: React.FC<QuickActionsProps> = ({
               <button
                 type="submit"
                 disabled={loading}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                className="btn-primary flex items-center gap-2"
               >
                 {loading ? <LoadingSpinner size="sm" /> : 'Add Account'}
               </button>
               <button
                 type="button"
                 onClick={() => setShowAddAccount(false)}
-                className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400"
+                className="btn-secondary"
               >
                 Cancel
               </button>
@@ -193,15 +193,15 @@ const QuickActions: React.FC<QuickActionsProps> = ({
       {/* Add Asset Form */}
       {showAddAsset && (
         <div className="mt-4 p-4 bg-green-50 rounded-lg">
-          <h4 className="font-semibold mb-3">Add New Asset</h4>
+          <h4 className="card-title mb-3">Add New Asset</h4>
           <form onSubmit={handleAddAsset} className="space-y-3">
             <div>
-              <label className="block text-sm font-medium mb-1">Account</label>
+              <label className="form-label">Account</label>
               <select
                 required
                 value={assetForm.account_id}
                 onChange={(e) => setAssetForm({...assetForm, account_id: e.target.value})}
-                className="w-full p-2 border rounded focus:ring-2 focus:ring-green-500"
+                className="form-input"
               >
                 <option value="">Select Account</option>
                 {accounts.map((account) => (
@@ -211,37 +211,37 @@ const QuickActions: React.FC<QuickActionsProps> = ({
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
-                <label className="block text-sm font-medium mb-1">Symbol</label>
+                <label className="form-label">Symbol</label>
                 <input
                   type="text"
                   required
                   value={assetForm.symbol}
                   onChange={(e) => setAssetForm({...assetForm, symbol: e.target.value.toUpperCase()})}
-                  className="w-full p-2 border rounded focus:ring-2 focus:ring-green-500"
+                  className="form-input"
                   placeholder="AAPL"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Shares</label>
+                <label className="form-label">Shares</label>
                 <input
                   type="number"
                   step="0.001"
                   required
                   value={assetForm.shares}
                   onChange={(e) => setAssetForm({...assetForm, shares: e.target.value})}
-                  className="w-full p-2 border rounded focus:ring-2 focus:ring-green-500"
+                  className="form-input"
                   placeholder="10"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Avg Cost</label>
+                <label className="form-label">Avg Cost</label>
                 <input
                   type="number"
                   step="0.01"
                   required
                   value={assetForm.avg_cost}
                   onChange={(e) => setAssetForm({...assetForm, avg_cost: e.target.value})}
-                  className="w-full p-2 border rounded focus:ring-2 focus:ring-green-500"
+                  className="form-input"
                   placeholder="150.00"
                 />
               </div>
@@ -250,14 +250,14 @@ const QuickActions: React.FC<QuickActionsProps> = ({
               <button
                 type="submit"
                 disabled={loading}
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+                className="btn-success flex items-center gap-2"
               >
                 {loading ? <LoadingSpinner size="sm" /> : 'Add Asset'}
               </button>
               <button
                 type="button"
                 onClick={() => setShowAddAsset(false)}
-                className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400"
+                className="btn-secondary"
               >
                 Cancel
               </button>
