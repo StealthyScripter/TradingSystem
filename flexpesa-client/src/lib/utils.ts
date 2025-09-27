@@ -198,6 +198,8 @@ export function getAccountIcon(accountName: string | null | undefined): string {
 }
 
 function safeNumber(value: unknown): number {
+  if (value == null) return 0; // handles null + undefined
+
   if (typeof value === 'number') return value;
   if (typeof value === 'string') {
     const parsed = parseFloat(value);
@@ -207,9 +209,11 @@ function safeNumber(value: unknown): number {
     }
     return parsed;
   }
+
   console.warn('Unexpected value type for number conversion:', typeof value, value);
   return 0;
 }
+
 
 function safeString(value: unknown): string {
   if (typeof value === 'string') return value;
