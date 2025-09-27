@@ -1,6 +1,6 @@
 'use client'
 import React from 'react';
-import { BookOpen, Code, Database, Shield, Zap, Settings, ArrowRight, ExternalLink, Copy } from 'lucide-react';
+import { BookOpen, Code, Database, Shield, Zap, ArrowRight, ExternalLink, Copy } from 'lucide-react';
 import Header from '@/components/Header';
 
 export default function DocsPage() {
