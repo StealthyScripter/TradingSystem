@@ -42,7 +42,7 @@ export default function RootLayout({
               <div className="flex justify-between items-center h-16">
                 {/* Logo */}
                 <div className="flex items-center">
-                  <h1 className="text-xl font-bold text-gray-900">
+                  <h1 className="flex items-center gap-2 text-xl font-bold text-gray-900">
                     <Logo /> Portfolio Dashboard
                   </h1>
                 </div>
