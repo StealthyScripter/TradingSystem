@@ -270,9 +270,6 @@ export interface PortfolioData {
   status: string;
 }
 
-// Keep the alias for now
-export type PortfolioSummaryStats = PortfolioPerformanceSummary;
-
 // ============ FORM DATA TYPES ============
 // These are specifically for form handling and might differ from API types
 
@@ -315,4 +312,71 @@ export interface PortfolioCreate {
   initial_investment: number;
   expense_ratio?: number;
   holdings: HoldingCreate[];
+}
+
+// ============ API.ts TYPE DEFINITIONS ============
+
+
+export interface LoginResponse {
+  user: User;
+  message: string;
+}
+
+export interface BenchmarksResponse {
+  benchmarks: Array<{
+    name: string;
+    symbol: string;
+    description: string;
+  }>;
+}
+
+export interface MetricsResponse {
+  metrics: Record<string, string>;
+}
+
+export interface HealthCheckResponse {
+  message: string;
+  status: string;
+  version: string;
+  environment: string;
+  database: {
+    database_type: string;
+    database_name: string;
+    connection_pool: string | object;
+    status: string;
+  };
+  features: {
+    real_time_data: boolean;
+    ai_analysis: boolean;
+    portfolio_tracking: boolean;
+    authentication: string;
+    database: string;
+  };
+  endpoints: {
+    portfolio_summary: string;
+    update_prices: string;
+    accounts: string;
+    assets: string;
+    performance: string;
+    docs: string;
+  };
+}
+
+export interface DetailedHealthResponse {
+  status: string;
+  timestamp: number;
+  version: string;
+  environment: string;
+  checks: {
+    database: string;
+    api: string;
+  };
+}
+
+export interface ErrorResponse {
+  error?: boolean;
+  message?: string;
+  detail?: string;
+  status_code?: number;
+  timestamp?: number;
 }

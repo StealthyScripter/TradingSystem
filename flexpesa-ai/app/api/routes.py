@@ -14,7 +14,7 @@ from app.middleware.conditional_auth import (
     get_current_user_optional,
     get_user_id
 )
-from app.schemas.portfolio import Account, AccountCreate, Asset, AssetCreate, PortfolioAnalysis
+from app.schemas.portfolio import Account, AccountCreateRequest, Asset, AssetCreateRequest, PortfolioAnalysis
 from app.models.portfolio import Account as AccountModel, Asset as AssetModel
 from app.services.portfolio_service import PortfolioService
 from app.services.perfomance import PerformanceService
@@ -227,7 +227,7 @@ async def update_prices(
 
 @router.post("/accounts/", response_model=Account)
 def create_account(
-    account: AccountCreate,
+    account: AccountCreateRequest,
     request: Request,
     db: Session = Depends(get_db),
     user: dict = Depends(get_current_user)
@@ -276,7 +276,7 @@ def get_accounts(
 
 @router.post("/assets/", response_model=Asset)
 async def add_asset(
-    asset: AssetCreate,
+    asset: AssetCreateRequest,
     request: Request,
     db: Session = Depends(get_db),
     user: dict = Depends(get_current_user)
@@ -554,7 +554,7 @@ async def create_portfolio_with_performance(
         user_id = user.get("sub")
 
         # Create account for portfolio
-        account_data = AccountCreate(
+        account_data = AccountCreateRequest(
             name=portfolio_data.name,
             account_type=portfolio_data.type.lower()
         )
@@ -564,7 +564,7 @@ async def create_portfolio_with_performance(
 
         # Add holdings as assets
         for holding in portfolio_data.holdings:
-            asset_data = AssetCreate(
+            asset_data = AssetCreateRequest(
                 account_id=account.id,
                 symbol=holding.symbol,
                 shares=holding.quantity,

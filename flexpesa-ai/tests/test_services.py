@@ -7,7 +7,7 @@ import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
 from sqlalchemy.exc import IntegrityError, DataError, OperationalError
 from app.services.portfolio_service import PortfolioService
-from app.schemas.portfolio import AccountCreate, AssetCreate
+from app.schemas.portfolio import AccountCreateRequest, AssetCreateRequest
 
 class TestPortfolioServiceBasic:
     """Test basic portfolio service operations"""
@@ -22,7 +22,7 @@ class TestPortfolioServiceBasic:
         service = PortfolioService(test_db)
         user_id = "test_user_123"
 
-        account_data = AccountCreate(
+        account_data = AccountCreateRequest(
             name="Service Test Account",
             account_type="brokerage"
         )
@@ -39,7 +39,7 @@ class TestPortfolioServiceBasic:
         """Test adding asset through service"""
         service = PortfolioService(test_db)
 
-        asset_data = AssetCreate(
+        asset_data = AssetCreateRequest(
             account_id=sample_account.id,
             symbol="GOOGL",
             shares=5,
@@ -59,7 +59,7 @@ class TestPortfolioServiceBasic:
         service = PortfolioService(test_db)
 
         # Add initial position
-        asset_data1 = AssetCreate(
+        asset_data1 = AssetCreateRequest(
             account_id=sample_account.id,
             symbol="AAPL",
             shares=10,
@@ -68,7 +68,7 @@ class TestPortfolioServiceBasic:
         await service.add_asset(asset_data1)
 
         # Add to existing position
-        asset_data2 = AssetCreate(
+        asset_data2 = AssetCreateRequest(
             account_id=sample_account.id,
             symbol="AAPL",  # Same symbol
             shares=5,
@@ -88,7 +88,7 @@ class TestPortfolioServiceBasic:
         """Test adding asset to invalid account"""
         service = PortfolioService(test_db)
 
-        asset_data = AssetCreate(
+        asset_data = AssetCreateRequest(
             account_id=99999,  # Non-existent
             symbol="FAIL",
             shares=10,
@@ -202,7 +202,7 @@ class TestPortfolioServiceIntegration:
         user_id = "workflow_user"
 
         # Step 1: Create account
-        account_data = AccountCreate(
+        account_data = AccountCreateRequest(
             name="Workflow Test Account",
             account_type="brokerage"
         )
@@ -210,13 +210,13 @@ class TestPortfolioServiceIntegration:
 
         # Step 2: Add multiple assets
         assets_to_add = [
-            AssetCreate(
+            AssetCreateRequest(
                 account_id=account.id,
                 symbol="AAPL",
                 shares=10,
                 avg_cost=150.0
             ),
-            AssetCreate(
+            AssetCreateRequest(
                 account_id=account.id,
                 symbol="MSFT",
                 shares=5,
@@ -250,22 +250,22 @@ class TestPortfolioServiceIntegration:
 
         # Create accounts for different users
         user1_account = service.create_account(
-            AccountCreate(name="User 1 Account", account_type="brokerage"),
+            AccountCreateRequest(name="User 1 Account", account_type="brokerage"),
             "user_1"
         )
         user2_account = service.create_account(
-            AccountCreate(name="User 2 Account", account_type="retirement"),
+            AccountCreateRequest(name="User 2 Account", account_type="retirement"),
             "user_2"
         )
 
         # Add assets for each user
-        await service.add_asset(AssetCreate(
+        await service.add_asset(AssetCreateRequest(
             account_id=user1_account.id,
             symbol="AAPL",
             shares=10,
             avg_cost=150.0
         ))
-        await service.add_asset(AssetCreate(
+        await service.add_asset(AssetCreateRequest(
             account_id=user2_account.id,
             symbol="MSFT",
             shares=5,
@@ -294,7 +294,7 @@ class TestErrorHandling:
 
         # Create account first
         service.create_account(
-            AccountCreate(name="Test", account_type="brokerage"),
+            AccountCreateRequest(name="Test", account_type="brokerage"),
             "user_123"
         )
 
@@ -302,7 +302,7 @@ class TestErrorHandling:
         with patch.object(test_db, 'commit', side_effect=IntegrityError("", "", "")):
             with pytest.raises(Exception):
                 service.create_account(
-                    AccountCreate(name="Test2", account_type="brokerage"),
+                    AccountCreateRequest(name="Test2", account_type="brokerage"),
                     "user_456"
                 )
 
@@ -315,7 +315,7 @@ class TestErrorHandling:
             with patch.object(test_db, 'rollback') as mock_rollback:
                 try:
                     service.create_account(
-                        AccountCreate(name="Test", account_type="brokerage"),
+                        AccountCreateRequest(name="Test", account_type="brokerage"),
                         "user_123"
                     )
                 except:

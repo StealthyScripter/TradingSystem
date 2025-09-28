@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 from pydantic import ValidationError
 from app.models.portfolio import Account, Asset, MarketData, PortfolioSnapshot
-from app.schemas.portfolio import AccountCreate, AssetCreate
+from app.schemas.portfolio import AccountCreateRequest, AssetCreateRequest
 from app.services.market_data import MarketDataService
 from app.services.enhanced_ai import LightweightAIService
 from app.core.config import settings
@@ -20,7 +20,7 @@ class PortfolioService:
             news_api_key=settings.NEWS_API_KEY
         )
 
-    def create_account(self, account: AccountCreate, clerk_user_id: str) -> Account:
+    def create_account(self, account: AccountCreateRequest, clerk_user_id: str) -> Account:
         """Create new investment account for a specific user"""
         try:
             db_account = Account(
@@ -43,7 +43,7 @@ class PortfolioService:
             logging.error(f"Failed to create account: {e}")
             raise
 
-    async def add_asset(self, asset: AssetCreate) -> Asset:
+    async def add_asset(self, asset: AssetCreateRequest) -> Asset:
         """Add asset to account with enhanced data"""
         try:
             # Check if account exists and is active
@@ -135,7 +135,7 @@ class PortfolioService:
 
         return symbol
 
-    def _validate_business_rules(self, asset: AssetCreate, account: Account):
+    def _validate_business_rules(self, asset: AssetCreateRequest, account: Account):
         """Validate business rules"""
         # Check account type restrictions
         if account.account_type == "retirement" and asset.symbol.endswith("-USD"):
@@ -170,7 +170,7 @@ class PortfolioService:
             logging.warning(f"Market data validation failed for {symbol}: {e}")
             # Decide whether to fail or continue
 
-    def _validate_position_limits(self, asset: AssetCreate, account: Account):
+    def _validate_position_limits(self, asset: AssetCreateRequest, account: Account):
         """Validate position and account limits"""
         # Calculate new total account value
         current_value = account.total_value

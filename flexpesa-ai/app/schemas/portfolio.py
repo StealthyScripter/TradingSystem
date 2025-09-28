@@ -49,7 +49,7 @@ class AssetBase(BaseModel):
             raise ValueError("Average cost cannot be negative")
         return v
 
-class AssetCreate(AssetBase):
+class AssetCreateRequest(AssetBase):
     account_id: int = Field(..., gt=0, description="Account ID this asset belongs to")
 
     @field_validator('account_id')
@@ -114,7 +114,7 @@ class AccountBase(BaseModel):
 
         return account_type
 
-class AccountCreate(AccountBase):
+class AccountCreateRequest(AccountBase):
     description: Optional[str] = Field(None, max_length=1000, description="Optional account description")
     currency: Optional[str] = Field("USD", min_length=3, max_length=3, description="Currency code")
 
@@ -146,7 +146,7 @@ class PortfolioAnalysis(BaseModel):
     risk_score: float
 
 # Additional validation models for more complex operations
-class BulkAssetCreate(BaseModel):
+class BulkAssetCreateRequest(BaseModel):
     """For creating multiple assets at once"""
     account_id: int = Field(..., gt=0)
     assets: List[AssetBase] = Field(..., min_length=1, max_length=50)

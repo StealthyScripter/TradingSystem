@@ -1,295 +1,6 @@
 // flexpesa-client/src/lib/api.ts
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
-
-// ============ TYPE DEFINITIONS ============
-
-interface AuthConfig {
-  provider: string;
-  configured: boolean;
-  disabled: boolean;
-  publishable_key?: string;
-  domain?: string;
-  mock_user?: {
-    id: string;
-    email: string;
-    first_name: string;
-    last_name: string;
-  };
-  message?: string;
-}
-
-interface UserProfile {
-  user_id: string;
-  email?: string;
-  first_name?: string;
-  last_name?: string;
-  total_accounts: number;
-  total_portfolio_value: number;
-  last_active: string;
-}
-
-interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-interface RegisterRequest {
-  email: string;
-  password: string;
-  first_name: string;
-  last_name: string;
-}
-
-interface User {
-  id: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  is_active: boolean;
-}
-
-interface LoginResponse {
-  user: User;
-  message: string;
-}
-
-interface Account {
-  id: number;
-  name: string;
-  account_type: string;
-  balance: number;
-  description?: string;
-  currency: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-  total_value: number;
-  asset_count: number;
-}
-
-interface AccountCreate {
-  name: string;
-  account_type: string;
-  description?: string;
-  currency?: string;
-}
-
-interface Asset {
-  id: number;
-  account_id: number;
-  symbol: string;
-  name?: string;
-  shares: number;
-  avg_cost: number;
-  current_price: number;
-  market_value: number;
-  cost_basis: number;
-  unrealized_pnl: number;
-  unrealized_pnl_percent: number;
-  asset_type?: string;
-  sector?: string;
-  industry?: string;
-  currency: string;
-  exchange?: string;
-  is_active: boolean;
-  created_at: string;
-  last_updated: string;
-  price_updated_at?: string;
-}
-
-interface AssetCreate {
-  account_id: number;
-  symbol: string;
-  shares: number;
-  avg_cost: number;
-}
-
-interface PortfolioSummary {
-  user_id: string;
-  accounts: Array<{
-    id: number;
-    name: string;
-    account_type: string;
-    description?: string;
-    balance: number;
-    cost_basis: number;
-    pnl: number;
-    pnl_percent: number;
-    currency: string;
-    created_at: string;
-    assets: Asset[];
-  }>;
-  summary: {
-    total_value: number;
-    total_cost_basis: number;
-    total_pnl: number;
-    total_pnl_percent: number;
-    total_accounts: number;
-    total_assets: number;
-  };
-  analysis: {
-    total_value: number;
-    diversity_score: number;
-    risk_score: number;
-    sentiment_score: number;
-    technical_score: number;
-    recommendation: string;
-    confidence: number;
-    insights: string[];
-    analysis_type: string;
-    symbols_analyzed: number;
-    performance: {
-      avg_rsi: number;
-      avg_momentum: number;
-      technical_signals: number;
-      news_coverage: number;
-    };
-  };
-  last_updated: string;
-  status: string;
-}
-
-interface UpdatePricesResponse {
-  updated_assets: number;
-  total_assets: number;
-  unique_symbols: number;
-  failed_symbols: string[];
-  duration: number;
-  timestamp: string;
-}
-
-interface PerformancePortfolio {
-  id: string;
-  name: string;
-  type: string;
-  total_return: number;
-  annualized_return: number;
-  sharpe_ratio: number;
-  max_drawdown: number;
-  total_value: number;
-  last_updated: string;
-  benchmark_comparisons: Array<{
-    name: string;
-    performance: number;
-  }>;
-  risk_metrics: {
-    beta: number;
-    volatility: number;
-    alpha: number;
-    expense_ratio: number;
-    sortino_ratio: number;
-    value_at_risk: number;
-  };
-}
-
-interface PortfolioSummaryStats {
-  total_portfolios: number;
-  total_value: number;
-  average_return: number;
-  average_sharpe_ratio: number;
-}
-
-interface QuickAnalysisResponse {
-  analysis: Record<
-    string,
-    {
-      sentiment: string;
-      confidence: number;
-      recommendation: string;
-      note: string;
-    }
-  >;
-}
-
-interface AssetAnalysis {
-  success: boolean;
-  symbol: string;
-  analysis: {
-    symbol: string;
-    recommendation: string;
-    technical: {
-      rsi: number;
-      rsi_signal: string;
-      momentum: number;
-      volatility: number;
-      trend: string;
-    };
-    sentiment: {
-      score: number;
-      signal: string;
-      confidence: number;
-      news_count: number;
-    };
-    analysis_type: string;
-  };
-  timestamp: string;
-}
-
-interface MarketStatus {
-  status: string;
-  timestamp: string;
-  message: string;
-  authenticated: boolean;
-}
-
-interface BenchmarksResponse {
-  benchmarks: Array<{
-    name: string;
-    symbol: string;
-    description: string;
-  }>;
-}
-
-interface MetricsResponse {
-  metrics: Record<string, string>;
-}
-
-interface HealthCheckResponse {
-  message: string;
-  status: string;
-  version: string;
-  environment: string;
-  database: {
-    database_type: string;
-    database_name: string;
-    connection_pool: string | object;
-    status: string;
-  };
-  features: {
-    real_time_data: boolean;
-    ai_analysis: boolean;
-    portfolio_tracking: boolean;
-    authentication: string;
-    database: string;
-  };
-  endpoints: {
-    portfolio_summary: string;
-    update_prices: string;
-    accounts: string;
-    assets: string;
-    performance: string;
-    docs: string;
-  };
-}
-
-interface DetailedHealthResponse {
-  status: string;
-  timestamp: number;
-  version: string;
-  environment: string;
-  checks: {
-    database: string;
-    api: string;
-  };
-}
-
-interface ErrorResponse {
-  error?: boolean;
-  message?: string;
-  detail?: string;
-  status_code?: number;
-  timestamp?: number;
-}
+import { AuthConfig, UserProfile, LoginRequest, RegisterRequest, User, Account, Asset, PortfolioSummary, UpdatePricesResponse, PerformancePortfolio, QuickAnalysisResponse, AssetAnalysis, MarketStatus, AccountCreateRequest, AssetCreateRequest, PortfolioPerformanceSummary, LoginResponse, BenchmarksResponse, MetricsResponse, HealthCheckResponse, DetailedHealthResponse, ErrorResponse } from "@/types"
 
 // ============ API CONFIGURATION ============
 
@@ -523,7 +234,7 @@ export const portfolioAPI = {
     }
   },
 
-  async createAccount(accountData: AccountCreate, token?: string): Promise<Account> {
+  async createAccount(accountData: AccountCreateRequest, token?: string): Promise<Account> {
     if (token) {
       return this.makeAuthenticatedRequest<Account>('post', '/accounts/', accountData, token);
     }
@@ -535,7 +246,7 @@ export const portfolioAPI = {
     }
   },
 
-  async addAsset(assetData: AssetCreate, token?: string): Promise<Asset> {
+  async addAsset(assetData: AssetCreateRequest, token?: string): Promise<Asset> {
     if (token) {
       return this.makeAuthenticatedRequest<Asset>('post', '/assets/', assetData, token);
     }
@@ -583,12 +294,12 @@ export const portfolioAPI = {
     }
   },
 
-  async getPortfolioPerformanceSummary(token?: string): Promise<PortfolioSummaryStats> {
+  async getPortfolioPerformanceSummary(token?: string): Promise<PortfolioPerformanceSummary> {
     if (token) {
-      return this.makeAuthenticatedRequest<PortfolioSummaryStats>('get', '/portfolios/performance/summary', undefined, token);
+      return this.makeAuthenticatedRequest<PortfolioPerformanceSummary>('get', '/portfolios/performance/summary', undefined, token);
     }
     try {
-      const res = await api.get<PortfolioSummaryStats>("/portfolios/performance/summary");
+      const res = await api.get<PortfolioPerformanceSummary>("/portfolios/performance/summary");
       return res.data;
     } catch (e) {
       throw handleApiError(e);
