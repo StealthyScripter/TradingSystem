@@ -93,3 +93,5 @@ frontend/build/
 *.sh
 
 DEPLOYMENT*
+.env*
+*.backup
