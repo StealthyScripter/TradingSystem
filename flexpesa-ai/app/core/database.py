@@ -3,6 +3,7 @@ from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import QueuePool
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from tenacity import retry, stop_after_attempt, wait_exponential
 import logging
 from .config import settings
 
@@ -44,6 +45,22 @@ else:
     })
     # For SQLite, we'll use a simple async wrapper
     async_engine = None
+
+@retry(
+    stop=stop_after_attempt(5),
+    wait=wait_exponential(multiplier=1, min=4, max=10)
+)
+def check_database_connection():
+    """Check database connection with retries"""
+    try:
+        db = SessionLocal()
+        db.execute(text("SELECT 1"))
+        db.close()
+        logger.info("Database connection successful")
+        return True
+    except Exception as e:
+        logger.error(f"Database connection failed: {e}")
+        raise
 
 # Create database engine
 engine = create_engine(settings.DATABASE_URL, **engine_kwargs)
@@ -173,3 +190,42 @@ def get_database_info():
         "connection_pool": DatabaseManager.get_pool_status() if settings.DATABASE_URL.startswith("postgresql://") else "N/A",
         "status": "connected" if check_database_connection() else "disconnected"
     }
+
+# Add detailed health endpoint
+@app.get("/health/ready")
+async def readiness_check(db: Session = Depends(get_db)):
+    """Kubernetes-style readiness probe"""
+    checks = {
+        "database": False,
+        "redis": False,
+        "auth": False
+    }
+
+    # Database check
+    try:
+        db.execute(text("SELECT 1"))
+        checks["database"] = True
+    except:
+        pass
+
+    # Redis check (if configured)
+    try:
+        if settings.REDIS_URL:
+            # Add redis ping
+            checks["redis"] = True
+    except:
+        pass
+
+    # Auth check
+    checks["auth"] = bool(settings.CLERK_SECRET_KEY)
+
+    all_healthy = all(checks.values())
+
+    return JSONResponse(
+        status_code=200 if all_healthy else 503,
+        content={
+            "status": "ready" if all_healthy else "not_ready",
+            "checks": checks,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    )

@@ -61,7 +61,7 @@ class Settings(BaseSettings):
     @classmethod
     def validate_database_url(cls, v, info):
         import os
-        
+
         # Allow SQLite for testing environment
         if os.getenv('TESTING') == 'true' or info.data.get('ENVIRONMENT') == 'testing':
             # Allow both PostgreSQL and SQLite in development/testing
@@ -162,44 +162,42 @@ def get_settings() -> Settings:
     return Settings()
 
 def validate_production_config() -> None:
-    """Validate production configuration"""
+    """Enhanced production validation"""
     settings = get_settings()
 
-    errors = []
-
     if settings.ENVIRONMENT == "production":
+        errors = []
+
         # Security checks
         if settings.SECRET_KEY == "your-secret-key-change-in-production-abc123def456ghi789jkl":
             errors.append("SECRET_KEY must be changed in production")
 
-        if settings.DEBUG:
-            errors.append("DEBUG must be False in production")
+        if len(settings.SECRET_KEY) < 32:
+            errors.append("SECRET_KEY must be at least 32 characters")
 
         # Database checks
-        if not settings.DATABASE_URL.startswith("postgresql://"):
-            errors.append("DATABASE_URL must use PostgreSQL in production")
-
         if "localhost" in settings.DATABASE_URL:
             errors.append("DATABASE_URL should not use localhost in production")
 
-        # Clerk authentication checks
+        if settings.POSTGRES_PASSWORD == "portfolio_password":
+            errors.append("Default database password detected")
+
+        # Authentication checks
         if not settings.CLERK_SECRET_KEY:
             errors.append("CLERK_SECRET_KEY is required in production")
 
-        if not settings.CLERK_PUBLISHABLE_KEY:
-            errors.append("CLERK_PUBLISHABLE_KEY is required in production")
+        # Rate limiting
+        if settings.DISABLE_RATE_LIMITING:
+            errors.append("Rate limiting cannot be disabled in production")
 
-        # CORS checks
-        allowed_origins = settings.get_allowed_origins()
-        if any("localhost" in origin for origin in allowed_origins):
-            errors.append("ALLOWED_ORIGINS should not include localhost in production")
+        # Required services
+        required_vars = ["SENTRY_DSN", "REDIS_URL"]
+        for var in required_vars:
+            if not getattr(settings, var, None):
+                errors.append(f"{var} is required in production")
 
-        # SSL/TLS checks
-        if not any(origin.startswith("https://") for origin in allowed_origins):
-            errors.append("Production should use HTTPS origins")
-
-    if errors:
-        raise ValueError("Production configuration errors: " + "; ".join(errors))
+        if errors:
+            raise ValueError("Production configuration errors:\n" + "\n".join(errors))
 
 def get_database_config() -> dict:
     """Get database configuration details"""

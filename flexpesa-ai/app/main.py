@@ -6,6 +6,8 @@ from fastapi.responses import JSONResponse
 import time
 import logging
 from contextlib import asynccontextmanager
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
 
 from app.core.config import settings
 from app.core.database import engine, Base, get_database_info, check_database_connection
@@ -21,6 +23,21 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app, max_upload_size: int = 10_000_000):  # 10MB
+        super().__init__(app)
+        self.max_upload_size = max_upload_size
+
+    async def dispatch(self, request: Request, call_next):
+        if request.method in ("POST", "PUT", "PATCH"):
+            content_length = request.headers.get("content-length")
+            if content_length and int(content_length) > self.max_upload_size:
+                return JSONResponse(
+                    status_code=413,
+                    content={"error": "Request body too large"}
+                )
+        return await call_next(request)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -80,6 +97,8 @@ if settings.ENVIRONMENT == "production":
         TrustedHostMiddleware,
         allowed_hosts=["yourdomain.com", "*.yourdomain.com", "localhost", "*.clerk.accounts.dev"]
     )
+
+app.add_middleware(RequestSizeLimitMiddleware, max_upload_size=10_000_000)
 
 # Compression Middleware
 app.add_middleware(GZipMiddleware, minimum_size=1000)
